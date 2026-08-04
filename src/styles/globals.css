@@ -188,6 +188,44 @@
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
+
+  /*
+   * Glavni sadržaj je meta skip-linka (tabIndex=-1). Pri programskom fokusu
+   * ne prikazujemo prsten oko celog regiona — to nije interaktivna kontrola,
+   * a vidljiv fokus je već nosila sam skip-link. (WCAG 2.4.7 se odnosi na
+   * interaktivne kontrole, ne na skip-metu.)
+   */
+  #glavni-sadrzaj:focus,
+  #glavni-sadrzaj:focus-visible {
+    outline: none;
+  }
+}
+
+/* ==========================================================================
+   Skip-link (WCAG 2.1 AA, 2.4.1). Vizuelno skriven dok ne dobije fokus, ali
+   ostaje u redosledu tabulacije i dostupan čitačima ekrana (bez display:none).
+   Pri fokusu jasno vidljiv: petrol pozadina, beli tekst (kontrast 9,75:1).
+   ========================================================================== */
+@layer components {
+  .skip-link {
+    position: fixed;
+    top: 0;
+    left: 0.5rem;
+    z-index: 100;
+    transform: translateY(-150%);
+    padding: 0.5rem 1rem;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    transition: transform var(--duration-collapse) var(--ease-standard);
+  }
+
+  .skip-link:focus {
+    transform: translateY(0.5rem);
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
 }
 
 /* ==========================================================================

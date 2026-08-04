@@ -18,4 +18,9 @@ describe("Početna stranica (smoke test)", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("ne renderuje sopstveni <main> (glavni landmark dolazi iz layout-a)", () => {
+    const { container } = render(<HomePage />);
+    expect(container.querySelectorAll("main")).toHaveLength(0);
+  });
 });

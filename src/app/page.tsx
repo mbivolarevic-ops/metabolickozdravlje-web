@@ -1,10 +1,12 @@
+import { Container } from "@/components/ui/Container";
+
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-start justify-center gap-4 px-6">
+    <Container className="py-16">
       <h1 className="text-3xl font-semibold">Metaboličko zdravlje</h1>
-      <p className="text-lg">
+      <p className="mt-4 text-lg">
         Edukativna platforma o metaboličkom zdravlju je u pripremi.
       </p>
-    </main>
+    </Container>
   );
 }

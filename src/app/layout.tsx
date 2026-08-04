@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Inter, Source_Serif_4 } from "next/font/google";
+import { SkipLink } from "@/components/ui/SkipLink";
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import "@/styles/globals.css";
 
 /*
@@ -41,7 +44,16 @@ export default function RootLayout({
       lang="sr-Latn-RS"
       className={`${inter.variable} ${sourceSerif.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <SkipLink />
+        <div className="flex min-h-dvh flex-col">
+          <Header />
+          <main id="glavni-sadrzaj" tabIndex={-1} className="flex-1">
+            {children}
+          </main>
+          <Footer />
+        </div>
+      </body>
     </html>
   );
 }
