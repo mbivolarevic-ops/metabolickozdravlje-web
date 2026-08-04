@@ -15,7 +15,7 @@ export function Header() {
           href="/"
           className="font-sans text-lg font-semibold text-primary no-underline"
         >
-          Metaboličko zdravlje
+          metabolickozdravlje.rs
         </Link>
       </Container>
     </header>

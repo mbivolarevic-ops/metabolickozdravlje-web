@@ -38,7 +38,7 @@ describe("Okvir sajta (layout chrome)", () => {
     const header = container.querySelector("header");
     expect(header).not.toBeNull();
     const homeLink = within(header as HTMLElement).getByRole("link", {
-      name: "Metaboličko zdravlje",
+      name: "metabolickozdravlje.rs",
     });
     expect(homeLink).toHaveAttribute("href", "/");
   });
