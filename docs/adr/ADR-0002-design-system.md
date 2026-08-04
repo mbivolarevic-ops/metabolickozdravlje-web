@@ -134,6 +134,18 @@ kontrola dobiće zaseban indikator koji zadovoljava 3:1.
 - **Pokret:** `--duration-color` 150ms, `--duration-collapse` 200ms, `--ease-standard`.
   Globalni `@media (prefers-reduced-motion: reduce)` isključuje sav pokret.
 
+### Tekstualni linkovi — nekolorni indikator (WCAG 1.4.1)
+
+Kontrast link boje `#1A6B67` prema **okolnom tekstu** `#1A1F1E` je približno
+**2,66:1**. Boja sama, dakle, nije dovoljan indikator linka unutar toka teksta.
+Zato tekstualni linkovi imaju **stalno podvlačenje** (`text-decoration-line: underline`,
+debljina 1px, `text-decoration-skip-ink: auto`) kao dodatni, nekolorni indikator.
+Podvlačenje se ne uklanja na hoveru ni na fokusu. Buduće komponente dugmadi
+koristiće zaseban, eksplicitan stil (bez ovog podrazumevanog podvlačenja).
+
+Kontrast link boje prema **pozadinama** i dalje prolazi AA: `#1A6B67` / krem
+`#FAF8F5` = 5,93:1 i `#1A6B67` / bela `#FFFFFF` = 6,28:1 (v. tabelu kontrasta).
+
 ### Pristupačnost u osnovi stila
 
 - Vidljiv fokus: `:focus-visible` → petrol prsten 2px sa odmakom 2px (kontrast 9,2:1).

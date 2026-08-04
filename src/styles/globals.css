@@ -162,8 +162,18 @@
     }
   }
 
+  /*
+   * Tekstualni linkovi (WCAG 2.1 AA, 1.4.1 „Use of Color").
+   * Kontrast link boje #1A6B67 prema okolnom tekstu #1A1F1E je ~2,66:1 —
+   * boja sama nije dovoljan indikator linka. Zato je podvlačenje STALNO,
+   * kao dodatni, nekolorni indikator. Ne uklanja se na hoveru ni fokusu.
+   * (Buduće komponente dugmadi koriste zaseban, eksplicitan stil.)
+   */
   a {
     color: var(--color-link);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-skip-ink: auto;
     text-underline-offset: 0.15em;
   }
 
