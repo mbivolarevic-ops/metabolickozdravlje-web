@@ -1,0 +1,14 @@
+# Build i zavisnosti
+node_modules
+.next
+out
+coverage
+package-lock.json
+next-env.d.ts
+
+# Projektna dokumentacija se ne formatira automatski —
+# docs/00–04 i CLAUDE.md menjaju se samo uz odobrenje vlasnika.
+# README.md je postojeći sadržaj vlasnika i ne dira se u Sprintu 1.
+docs/
+CLAUDE.md
+README.md
