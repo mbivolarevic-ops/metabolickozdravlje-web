@@ -1,7 +1,206 @@
 @import "tailwindcss";
 
 /*
- * Namerno minimalno (Sprint 1).
- * Dizajn tokeni (paleta, tipografija, spacing) čekaju odluku vlasnika
- * o vizuelnom identitetu — videti docs/02, sekcija 6 i listu odluka.
+ * CMZ dizajn-sistem — Sprint 2, PR 1 (tokeni i pristupačna osnova stila).
+ * Odluke i obrazloženja: docs/adr/ADR-0002-design-system.md
+ * Izvor vrednosti: docs/02 §6.2 (boje), §6.3 (tipografija), §6.5 (razmaci),
+ * §6.11 (radijusi), §6.12 (pokret).
+ *
+ * Dva sloja tokena:
+ *   Sloj 1 — sirova paleta (--cmz-*): konkretne vrednosti boja. NE koristi se
+ *            direktno u komponentama.
+ *   Sloj 2 — semantički tokeni (@theme): nazivi opisuju ULOGU, ne boju.
+ *            Noćni režim (v2) menja SAMO ovaj sloj — sirova paleta ostaje.
  */
+
+/* ==========================================================================
+   Sloj 1 — sirova paleta (docs/02 §6.2)
+   ========================================================================== */
+:root {
+  --cmz-petrol: #0f4c4a; /* duboka petrol zelena — primarni autoritet */
+  --cmz-petrol-light: #1a6b67; /* svetlija petrol — linkovi, aktivna stanja */
+  --cmz-terracotta: #b85a37; /* korigovano sa #C4633D radi WCAG AA — v. ADR-0002 */
+  --cmz-cream: #faf8f5; /* topli krem — pozadina */
+  --cmz-white: #ffffff; /* površine (kartice, callout) */
+  --cmz-ink: #1a1f1e; /* osnovni tekst — nije čisto crno */
+  --cmz-ink-muted: #5a6360; /* sekundarni tekst — meta, opisi */
+  --cmz-border: #e3dfd8; /* tanke, nenametljive ivice */
+  --cmz-caution: #8a6d1f; /* callout „oprez" — zemljano žuta, ne alarm */
+  --cmz-important: #3d4a5c; /* callout „važno" — neutralno plavo-siva */
+
+  /* Trajanja i krive pokreta (docs/02 §6.12).
+     Nisu deo Tailwind namespace-a pa žive kao obične custom vrednosti. */
+  --duration-color: 150ms; /* prelaz boje */
+  --duration-collapse: 200ms; /* otvaranje sklopivih elemenata */
+}
+
+/* ==========================================================================
+   Sloj 2 — semantički tokeni + Tailwind 4 tema
+   `@theme` (bez `inline`) znači da Tailwind utilitiji referišu var(--...),
+   pa je noćni režim (v2) izmena samo vrednosti ispod, bez rekompajliranja.
+   ========================================================================== */
+@theme {
+  /* --- Boje (semantičke uloge) --- */
+  --color-background: var(--cmz-cream);
+  --color-surface: var(--cmz-white);
+  --color-text: var(--cmz-ink);
+  --color-text-muted: var(--cmz-ink-muted);
+  --color-primary: var(--cmz-petrol);
+  --color-on-primary: var(--cmz-white);
+  --color-link: var(--cmz-petrol-light);
+  --color-accent: var(--cmz-terracotta); /* SAMO za CTA (docs/02 §6.2) */
+  --color-on-accent: var(--cmz-white);
+  --color-border: var(--cmz-border);
+  --color-focus: var(--cmz-petrol);
+  --color-callout-info: var(--cmz-petrol-light);
+  --color-callout-caution: var(--cmz-caution);
+  --color-callout-important: var(--cmz-important);
+
+  /* --- Tipografija: porodice ---
+     Vrednosti --font-inter / --font-source-serif-4 dolaze iz next/font
+     (src/app/layout.tsx). Fallback lanac drži izgled dok se font ne učita. */
+  --font-sans:
+    var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-source-serif-4), Georgia, "Times New Roman", serif;
+
+  /* --- Tipografska skala (docs/02 §6.3) — kanonske (desktop) vrednosti.
+         Responzivno smanjenje na mobilnom je u @layer base ispod. --- */
+  --text-meta: 0.9375rem; /* 15px */
+  --text-body: 1.125rem; /* 18px */
+  --text-lead: 1.3125rem; /* 21px */
+  --text-h3: 1.4375rem; /* 23px */
+  --text-h2: 1.875rem; /* 30px */
+  --text-h1: 2.5rem; /* 40px */
+
+  /* --- Prored --- */
+  --leading-tight: 1.15; /* H1 */
+  --leading-heading: 1.25; /* H2/H3 */
+  --leading-body: 1.7; /* telo teksta — najveći faktor čitljivosti */
+
+  /* --- Razmaci: bazna jedinica 4px (docs/02 §6.5) ---
+         Tailwind skala se izvodi iz ove jedinice: p-1=4px … p-24=96px.
+         Dozvoljeni koraci: 4·8·12·16·24·32·48·64·96, bez međuvrednosti. */
+  --spacing: 0.25rem;
+
+  /* --- Maksimalne širine (docs/02 §6.5) --- */
+  --container-prose: 42.5rem; /* 680px — maksimalna širina teksta */
+  --container-page: 75rem; /* 1200px — maksimalna širina stranice */
+
+  /* --- Radijusi (docs/02 §6.11 — primarni CTA 6px) --- */
+  --radius-sm: 0.25rem; /* 4px */
+  --radius-md: 0.375rem; /* 6px */
+  --radius-lg: 0.5rem; /* 8px */
+
+  /* --- Pokret: standardna kriva --- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ==========================================================================
+   Osnovni stil stranice (@layer base)
+   Mobile-first: podrazumevane vrednosti su za mobilni (docs/02 §7 —
+   „mobilni je primarni proizvod"), desktop se podiže na min-width: 48rem.
+   ========================================================================== */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-serif);
+    font-size: 1.0625rem; /* 17px — mobilna osnova */
+    line-height: var(--leading-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  @media (min-width: 48rem) {
+    body {
+      font-size: var(--text-body); /* 18px — desktop osnova */
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-sans);
+    color: var(--color-text);
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  /* Mobilne veličine naslova (docs/02 §6.3, kolona „mobilno") */
+  h1 {
+    font-size: 2rem; /* 32px */
+    line-height: var(--leading-tight);
+  }
+  h2 {
+    font-size: 1.625rem; /* 26px */
+    line-height: var(--leading-heading);
+  }
+  h3 {
+    font-size: 1.3125rem; /* 21px */
+    line-height: 1.3;
+  }
+
+  /* Desktop veličine naslova */
+  @media (min-width: 48rem) {
+    h1 {
+      font-size: var(--text-h1); /* 40px */
+    }
+    h2 {
+      font-size: var(--text-h2); /* 30px */
+    }
+    h3 {
+      font-size: var(--text-h3); /* 23px */
+    }
+  }
+
+  /*
+   * Tekstualni linkovi (WCAG 2.1 AA, 1.4.1 „Use of Color").
+   * Kontrast link boje #1A6B67 prema okolnom tekstu #1A1F1E je ~2,66:1 —
+   * boja sama nije dovoljan indikator linka. Zato je podvlačenje STALNO,
+   * kao dodatni, nekolorni indikator. Ne uklanja se na hoveru ni fokusu.
+   * (Buduće komponente dugmadi koriste zaseban, eksplicitan stil.)
+   */
+  a {
+    color: var(--color-link);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-skip-ink: auto;
+    text-underline-offset: 0.15em;
+  }
+
+  /*
+   * Vidljiv fokus na tastaturi (WCAG 2.1 AA, 2.4.7).
+   * Prsten je petrol na kremu (kontrast 9,2:1 — v. ADR-0002), 2px, sa
+   * odmakom. Koristimo :focus-visible da miš ne ostavlja prsten, ali fokus
+   * tastature uvek ostaje jasan.
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+}
+
+/* ==========================================================================
+   Poštovanje „smanji animacije" (docs/02 §6.12; WCAG 2.3.3 / 2.2.2)
+   Isključuje sav pokret, uključujući implicitno skrolovanje.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
