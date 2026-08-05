@@ -55,15 +55,28 @@ describe("Okvir sajta (layout chrome)", () => {
     );
   });
 
-  it("nema linkova ka nepostojećim rutama (dozvoljeno samo '/' i '#glavni-sadrzaj')", () => {
+  it("nema linkova ka nepostojećim rutama", () => {
     const { container } = renderLayout();
     const hrefs = Array.from(container.querySelectorAll("a")).map((a) =>
       a.getAttribute("href"),
     );
-    const allowed = new Set(["/", "#glavni-sadrzaj"]);
+    // Rute koje stvarno postoje: početna, `/teme` i skip-link.
+    const allowed = new Set(["/", "/teme", "#glavni-sadrzaj"]);
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
       expect(allowed.has(href ?? "")).toBe(true);
     }
+  });
+
+  it("glavna navigacija vodi na postojeću rutu /teme", () => {
+    const { container } = renderLayout();
+    const header = container.querySelector("header");
+    expect(header).not.toBeNull();
+
+    const nav = within(header as HTMLElement).getByRole("navigation", {
+      name: "Glavna navigacija",
+    });
+    const temeLink = within(nav).getByRole("link", { name: "Teme" });
+    expect(temeLink).toHaveAttribute("href", "/teme");
   });
 });
