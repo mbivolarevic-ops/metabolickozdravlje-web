@@ -16,11 +16,15 @@
     "test:sanity": "vitest run --config vitest.integration.config.mts",
     "studio:dev": "sanity dev --host 127.0.0.1 --port 3333",
     "studio:build": "sanity build",
+    "schema:extract": "sanity schemas extract --force",
+    "typegen": "npm run schema:extract && sanity typegen generate",
+    "typegen:check": "npm run typegen && git diff --exit-code -- schema.json sanity.types.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "dependencies": {
     "@sanity/client": "7.26.2",
+    "groq": "6.9.0",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"

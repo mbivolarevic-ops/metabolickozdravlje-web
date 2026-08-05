@@ -43,3 +43,11 @@ jobs:
         run: npm run studio:build
         env:
           SANITY_STUDIO_PROJECT_ID: ${{ vars.SANITY_STUDIO_PROJECT_ID }}
+
+      # Generisani artefakti moraju odgovarati šemi i upitima u repozitorijumu.
+      # Ako neko promeni šemu ili GROQ upit a ne regeneriše tipove, ovaj korak
+      # pada na diff-u. Radi bez mreže — ekstrakcija čita lokalnu konfiguraciju.
+      - name: TypeGen drift check
+        run: npm run typegen:check
+        env:
+          SANITY_STUDIO_PROJECT_ID: ${{ vars.SANITY_STUDIO_PROJECT_ID }}
