@@ -1,7 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
-  MEDICAL_DISCLAIMER_TEXT,
   MedicalDisclaimer,
   ReferenceList,
   ReviewerByline,
@@ -58,12 +57,58 @@ describe("ReviewerByline", () => {
     expect(formatReviewDate("2026-08-05")).toBe("5. avgust 2026.");
   });
 
-  it("4b — neispravan datum ne ruši prikaz", () => {
+  it("4b — formatReviewDate odbija neispravne datume", () => {
     for (const value of ["2026-02-31", "05.08.2026.", "juče", ""]) {
       expect(formatReviewDate(value)).toBeNull();
     }
-    render(<ReviewerByline {...REVIEWER} reviewDate="nepoznato" />);
-    expect(screen.getByText(/nepoznato/)).toBeInTheDocument();
+  });
+
+  it("validni podaci prikazuju kompletan potpis", () => {
+    const { container } = render(<ReviewerByline {...REVIEWER} />);
+    expect(container).not.toBeEmptyDOMElement();
+    expect(container.textContent).toContain("Stručno proverio:");
+    expect(container.textContent).toContain("Dr Test Recenzent");
+    expect(container.textContent).toContain("5. avgust 2026.");
+  });
+});
+
+/**
+ * „Fail closed“ — delimičan potpis stručnog pregleda gori je od izostanka
+ * potpisa, jer bi poručio da je tekst pregledan a ne bi rekao ko i kada.
+ */
+describe("ReviewerByline — fail closed", () => {
+  it.each([
+    ["nevalidan datum", { reviewDate: "nepoznato" }],
+    ["nemoguć datum 2026-02-31", { reviewDate: "2026-02-31" }],
+    ["datum u pogrešnom obliku", { reviewDate: "05.08.2026." }],
+    ["prazan datum", { reviewDate: "" }],
+    ["prazno ime", { name: "" }],
+    ["ime od samih razmaka", { name: "   " }],
+    ["prazne kvalifikacije", { credentials: "" }],
+    ["kvalifikacije od samih razmaka", { credentials: "  \t " }],
+  ])("%s → prazan render", (_label, override) => {
+    const { container } = render(
+      <ReviewerByline {...REVIEWER} {...override} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("nevalidna sirova vrednost se nigde ne pojavljuje u DOM-u", () => {
+    const { container } = render(
+      <ReviewerByline {...REVIEWER} reviewDate="nepoznato" />,
+    );
+    expect(container.textContent).not.toContain("nepoznato");
+    expect(container.querySelector("time")).toBeNull();
+    expect(screen.queryByText(/Stručno proverio:/)).toBeNull();
+    expect(screen.queryByText("Dr Test Recenzent")).toBeNull();
+  });
+
+  it("ne prikazuje delimičan potpis kada nedostaju kvalifikacije", () => {
+    const { container } = render(
+      <ReviewerByline {...REVIEWER} credentials="   " />,
+    );
+    expect(container.textContent).not.toContain("Dr Test Recenzent");
+    expect(container.textContent).not.toContain("Poslednja provera");
   });
 
   it("ne tvrdi da je recenzent autor teksta", () => {
@@ -79,13 +124,15 @@ describe("ReviewerByline", () => {
 
 describe("MedicalDisclaimer", () => {
   it("5 — prikazuje tačan odobren tekst", () => {
-    render(<MedicalDisclaimer />);
+    // Tekst se proverava kroz renderovanu komponentu, a ne uvozom konstante:
+    // formulacija nije deo javnog API-ja i rute je ne smeju koristiti.
+    const { container } = render(<MedicalDisclaimer />);
     expect(
       screen.getByText(
         "Ovaj tekst je edukativan i ne zamenjuje pregled, dijagnozu ni terapiju koju određuje vaš lekar.",
       ),
     ).toBeInTheDocument();
-    expect(MEDICAL_DISCLAIMER_TEXT).toBe(
+    expect(container.textContent?.trim()).toBe(
       "Ovaj tekst je edukativan i ne zamenjuje pregled, dijagnozu ni terapiju koju određuje vaš lekar.",
     );
   });

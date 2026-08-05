@@ -19,8 +19,14 @@
  * ostane vidljiva i čitljiva.
  */
 
-/** Odobrena formulacija. Ne menjati bez odobrenja vlasnika projekta. */
-export const MEDICAL_DISCLAIMER_TEXT =
+/**
+ * Odobrena formulacija. Ne menjati bez odobrenja vlasnika projekta.
+ *
+ * Namerno INTERNA — ne izvozi se ni iz ovog modula ni iz barrel-a. Tekst
+ * napomene nosi pravnu težinu; ruta ga ne treba ni čitati ni prikazivati
+ * mimo ove komponente.
+ */
+const MEDICAL_DISCLAIMER_TEXT =
   "Ovaj tekst je edukativan i ne zamenjuje pregled, dijagnozu ni terapiju koju određuje vaš lekar.";
 
 export function MedicalDisclaimer() {
