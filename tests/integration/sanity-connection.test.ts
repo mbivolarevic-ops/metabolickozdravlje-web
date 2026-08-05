@@ -30,7 +30,7 @@ describe("Veza sa Sanity Content Lake-om", () => {
     expect(config.dataset).toBe("staging");
   });
 
-  it("vraća broj dokumenata; na praznom staging datasetu je to 0", async () => {
+  it("vraća nenegativan ceo broj dokumenata, bez obzira na sadržaj", async () => {
     // Kapija se ponavlja i ovde: redosled testova ne sme biti jedino što
     // sprečava mrežni poziv nad produkcijom.
     if (config.dataset !== "staging") {
@@ -41,8 +41,14 @@ describe("Veza sa Sanity Content Lake-om", () => {
 
     const count = await fetchDocumentCount();
 
+    /*
+     * Namerno se NE tvrdi da je rezultat 0. Ovo je provera VEZE, ne sadržaja:
+     * čim urednik unese prvi dokument u `staging`, tvrdnja o nuli bi počela
+     * da pada iako je veza potpuno ispravna. Provera zato ostaje nezavisna
+     * od toga koliko dokumenata dataset sadrži.
+     */
     expect(typeof count).toBe("number");
+    expect(Number.isInteger(count)).toBe(true);
     expect(count).toBeGreaterThanOrEqual(0);
-    expect(count).toBe(0);
   }, 30_000);
 });
