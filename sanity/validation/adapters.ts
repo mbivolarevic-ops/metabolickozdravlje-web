@@ -139,6 +139,7 @@ export function toArticleInput(document: unknown): ArticleInput {
     contentFormat: format,
     editorialTier: tier,
     body: asArray(record.body).map(toContentBlock),
+    cluster: toDocumentReference(record.cluster),
     author: toDocumentReference(record.author),
     reviewedBy: toDocumentReference(record.reviewedBy),
     reviewDate: asString(record.reviewDate),

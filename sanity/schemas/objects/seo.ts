@@ -1,8 +1,11 @@
 import { defineField, defineType } from "sanity";
 
 /**
- * SEO polja. Granice dužine su iz docs/03 §4 i liste provere §8:
- * title 50–60 znakova, meta opis 140–155 znakova, kao rečenica.
+ * SEO polja (docs/03 §4 i lista provere §8).
+ *
+ * Po odluci vlasnika: PRISUSTVO oba polja je greška koja blokira objavu, a
+ * preporučene dužine (50–60 i 140–155) su UPOZORENJA — vide se u studiju, ali
+ * ne zaustavljaju objavu proverenog teksta.
  */
 export const seo = defineType({
   name: "seo",
@@ -14,8 +17,14 @@ export const seo = defineType({
       title: "SEO naslov",
       type: "string",
       description:
-        "50–60 znakova. Ključni pojam na početku. Može se razlikovati od naslova članka.",
-      validation: (rule) => rule.required().min(50).max(60),
+        "Preporučeno 50–60 znakova. Ključni pojam na početku. Može se razlikovati od naslova članka.",
+      validation: (rule) => [
+        rule.required(),
+        rule
+          .min(50)
+          .max(60)
+          .warning("Preporučena dužina SEO naslova je 50–60 znakova."),
+      ],
     }),
     defineField({
       name: "metaDescription",
@@ -23,8 +32,14 @@ export const seo = defineType({
       type: "text",
       rows: 3,
       description:
-        "140–155 znakova. Obećanje odgovora, ne nabrajanje ključnih reči. Piše se kao rečenica.",
-      validation: (rule) => rule.required().min(140).max(155),
+        "Preporučeno 140–155 znakova. Obećanje odgovora, ne nabrajanje ključnih reči. Piše se kao rečenica.",
+      validation: (rule) => [
+        rule.required(),
+        rule
+          .min(140)
+          .max(155)
+          .warning("Preporučena dužina SEO opisa je 140–155 znakova."),
+      ],
     }),
   ],
 });

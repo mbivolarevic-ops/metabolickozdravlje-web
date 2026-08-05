@@ -18,10 +18,12 @@ export type ValidationRuleCode =
   | "MISSING_SLUG"
   | "MISSING_EXCERPT"
   | "MISSING_BODY"
+  | "MISSING_CLUSTER"
   | "MISSING_AUTHOR"
   | "MISSING_REVIEWER"
   | "MISSING_REVIEW_DATE"
   | "MISSING_REFERENCES"
+  | "INCOMPLETE_REFERENCE"
   | "MISSING_LEGAL_REVIEW"
   | "MISSING_SEO_TITLE"
   | "MISSING_SEO_DESCRIPTION"
@@ -108,6 +110,7 @@ export interface ArticleInput {
   contentFormat?: ContentFormat;
   editorialTier?: EditorialTier;
   body?: ContentBlockInput[];
+  cluster?: DocumentReferenceInput;
   author?: DocumentReferenceInput;
   reviewedBy?: DocumentReferenceInput;
   reviewDate?: string;

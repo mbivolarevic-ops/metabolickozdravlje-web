@@ -60,6 +60,7 @@ export function validArticle(): ArticleInput {
         children: [],
       },
     ],
+    cluster: { _ref: "cluster-1" },
     author: { _ref: "author-1" },
     reviewedBy: { _ref: "reviewer-1" },
     reviewDate: "2026-08-05",

@@ -527,8 +527,10 @@ defineType({
     // ——— MEDICINSKA KONTROLA ———
     { name: 'author',       type: 'reference', to: [{ type: 'author' }], group: 'medical',
       validation: R => R.required() },
-    { name: 'reviewedBy',   type: 'reference', to: [{ type: 'medicalReviewer' }], group: 'medical' },
-    { name: 'reviewDate',   type: 'date', group: 'medical' },
+    { name: 'reviewedBy',   type: 'reference', to: [{ type: 'medicalReviewer' }], group: 'medical',
+      validation: R => R.required() },
+    { name: 'reviewDate',   type: 'date', group: 'medical',
+      validation: R => R.required() },
     { name: 'nextReviewDate', type: 'date', group: 'medical',
       description: 'Podrazumevano 18 meseci od recenzije.' },
     { name: 'editorialTier', type: 'string', group: 'medical',
@@ -539,7 +541,8 @@ defineType({
       ]},
       initialValue: 'standard', validation: R => R.required() },
     { name: 'references', type: 'array', of: [{ type: 'reference_item' }], group: 'medical',
-      description: 'Primarni izvori: SZO, EASD/ADA, NICE, recenzirani radovi.' },
+      description: 'Primarni izvori: SZO, EASD/ADA, NICE, recenzirani radovi. Najmanje jedan kompletan izvor (naziv + veza).',
+      validation: R => R.required().min(1) },
     { name: 'legalReviewed', type: 'boolean', group: 'medical', initialValue: false,
       hidden: ({ document }) => document?.editorialTier !== 'sensitive' },
 
@@ -557,11 +560,14 @@ defineType({
     { name: 'seo', type: 'seo', group: 'seo' },
   ],
 
-  // KLJUČNA VALIDACIJA: bez recenzenta i datuma nema objave
+  // KLJUČNA VALIDACIJA: bez recenzenta, datuma i izvora nema objave.
+  // Važi za SVE nivoe, uključujući 'standard' (odluka vlasnika projekta).
+  // Pravni pregled dodatno traži samo nivo 'sensitive'.
   validation: R => R.custom((doc) => {
-    if (doc?.editorialTier === 'standard') return true
     if (!doc?.reviewedBy || !doc?.reviewDate)
-      return 'Članci povišenog i osetljivog nivoa ne mogu se objaviti bez stručnog recenzenta i datuma recenzije.'
+      return 'Nijedan članak se ne može objaviti bez stručnog recenzenta i datuma stručne provere.'
+    if (!doc?.references?.length)
+      return 'Nijedan članak se ne može objaviti bez najmanje jednog kompletnog izvora.'
     if (doc?.editorialTier === 'sensitive' && !doc?.legalReviewed)
       return 'Osetljiv sadržaj zahteva potvrđen pravni pregled.'
     return true

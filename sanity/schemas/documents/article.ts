@@ -1,6 +1,10 @@
 import { defineField, defineType } from "sanity";
 import { toArticleInput } from "../../validation/adapters";
 import { validateArticleForPublish } from "../../validation/publishGuards";
+import {
+  formatIssuesForSanity,
+  formatWarningsForSanity,
+} from "../../validation/sanityMessages";
 
 /**
  * Članak — najvažniji tip (docs/01 §8.3).
@@ -180,15 +184,27 @@ export const article = defineType({
   ],
 
   /**
-   * Kapija pred objavu. Poziva istu čistu funkciju koju pokrivaju testovi —
-   * bez dupliranja pravila.
+   * Kapija pred objavu. Oba pravila pozivaju ISTU čistu funkciju koju
+   * pokrivaju testovi — pravila se ne dupliraju.
+   *
+   * Prvo pravilo je greška i zaustavlja objavu. Drugo je `.warning()` i samo
+   * obaveštava urednika (preporučene SEO dužine, neblokirajuće clarity
+   * provere) — bez njega bi se ta upozorenja izgubila.
    */
-  validation: (rule) =>
-    rule.custom((document) => {
-      const result = validateArticleForPublish(toArticleInput(document));
-      if (result.ok) return true;
-      return result.issues.map((issue) => issue.message).join(" · ");
-    }),
+  validation: (rule) => [
+    rule.custom((document) =>
+      formatIssuesForSanity(
+        validateArticleForPublish(toArticleInput(document)),
+      ),
+    ),
+    rule
+      .custom((document) =>
+        formatWarningsForSanity(
+          validateArticleForPublish(toArticleInput(document)),
+        ),
+      )
+      .warning(),
+  ],
 
   preview: {
     select: { title: "title", subtitle: "editorialTier" },

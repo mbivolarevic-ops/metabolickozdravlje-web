@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { validateArticleForPublish } from "../../sanity/validation/publishGuards";
 import { toArticleInput } from "../../sanity/validation/adapters";
 import {
+  formatIssuesForSanity,
+  formatWarningsForSanity,
+} from "../../sanity/validation/sanityMessages";
+import {
   CLARITY_CHECKS,
   isClarityCheckBlocking,
 } from "../../sanity/validation/clarityChecks";
@@ -59,6 +63,43 @@ describe("Validacija članka pred objavu", () => {
   it("4 — članak bez ijednog izvora je blokiran (odluka B)", () => {
     const result = validateArticleForPublish(articleWith({ references: [] }));
     expect(hasCode(result, "MISSING_REFERENCES")).toBe(true);
+  });
+
+  it("4b — prazna stavka izvora ne prolazi kao izvor", () => {
+    const result = validateArticleForPublish(articleWith({ references: [{}] }));
+    expect(hasCode(result, "INCOMPLETE_REFERENCE")).toBe(true);
+    expect(result.ok).toBe(false);
+  });
+
+  it("4c — izvor bez naziva je nepotpun", () => {
+    const result = validateArticleForPublish(
+      articleWith({ references: [{ url: "https://example.org/primer" }] }),
+    );
+    expect(hasCode(result, "INCOMPLETE_REFERENCE")).toBe(true);
+  });
+
+  it("4d — izvor bez veze je nepotpun", () => {
+    const result = validateArticleForPublish(
+      articleWith({ references: [{ label: "Primer izvora" }] }),
+    );
+    expect(hasCode(result, "INCOMPLETE_REFERENCE")).toBe(true);
+  });
+
+  it("4e — jedan kompletan izvor je dovoljan", () => {
+    const result = validateArticleForPublish(
+      articleWith({
+        references: [{ label: "Primer izvora", url: "https://example.org/a" }],
+      }),
+    );
+    expect(hasCode(result, "INCOMPLETE_REFERENCE")).toBe(false);
+    expect(hasCode(result, "MISSING_REFERENCES")).toBe(false);
+    expect(result.ok).toBe(true);
+  });
+
+  it("4f — članak bez teme (klastera) je blokiran", () => {
+    const result = validateArticleForPublish(articleWithout("cluster"));
+    expect(hasCode(result, "MISSING_CLUSTER")).toBe(true);
+    expect(result.ok).toBe(false);
   });
 
   it("5 — osetljiv članak bez pravnog pregleda je blokiran", () => {
@@ -136,18 +177,51 @@ describe("Validacija članka pred objavu", () => {
     expect(hasCode(result, "MISSING_BODY")).toBe(true);
   });
 
-  it("SEO polja su obavezna i moraju biti u propisanom opsegu", () => {
+  it("prazan element ne predstavlja telo članka", () => {
+    const prazanElement = validateArticleForPublish(
+      articleWith({ body: [{}] }),
+    );
+    expect(hasCode(prazanElement, "MISSING_BODY")).toBe(true);
+
+    const bezDece = validateArticleForPublish(
+      articleWith({ body: [{ _type: "block" }] }),
+    );
+    expect(hasCode(bezDece, "MISSING_BODY")).toBe(true);
+
+    const samoRazmaci = validateArticleForPublish(
+      articleWith({ body: bodyWithText("   ") }),
+    );
+    expect(hasCode(samoRazmaci, "MISSING_BODY")).toBe(true);
+  });
+
+  it("sama slika bez teksta ne zadovoljava obavezno telo", () => {
+    const result = validateArticleForPublish(
+      articleWith({
+        body: [{ _type: "imageWithCaption", alt: "Opis slike.", children: [] }],
+      }),
+    );
+    expect(hasCode(result, "MISSING_BODY")).toBe(true);
+  });
+
+  it("SEO polja su obavezna (blokiraju), a dužina je samo upozorenje", () => {
     const bezSeo = validateArticleForPublish(articleWithout("seo"));
     expect(hasCode(bezSeo, "MISSING_SEO_TITLE")).toBe(true);
     expect(hasCode(bezSeo, "MISSING_SEO_DESCRIPTION")).toBe(true);
+    expect(bezSeo.ok).toBe(false);
 
     const prekratko = validateArticleForPublish(
       articleWith({
         seo: { metaTitle: "Prekratko", metaDescription: "Kratko" },
       }),
     );
-    expect(hasCode(prekratko, "SEO_TITLE_LENGTH")).toBe(true);
-    expect(hasCode(prekratko, "SEO_DESCRIPTION_LENGTH")).toBe(true);
+    // Postoje, pa ne blokiraju objavu…
+    expect(prekratko.ok).toBe(true);
+    expect(hasCode(prekratko, "SEO_TITLE_LENGTH")).toBe(false);
+    expect(hasCode(prekratko, "SEO_DESCRIPTION_LENGTH")).toBe(false);
+    // …ali urednik vidi upozorenja o preporučenoj dužini.
+    const warningCodes = prekratko.warnings.map((warning) => warning.code);
+    expect(warningCodes).toContain("SEO_TITLE_LENGTH");
+    expect(warningCodes).toContain("SEO_DESCRIPTION_LENGTH");
   });
 
   it("svaki nalaz ima šifru i poruku na srpskom", () => {
@@ -162,11 +236,12 @@ describe("Validacija članka pred objavu", () => {
 
 describe("Ista kapija važi za sve nivoe kontrole", () => {
   for (const tier of ALL_TIERS) {
-    it(`nivo „${tier}" traži autora, recenzenta, datum provere i izvor`, () => {
+    it(`nivo „${tier}" traži temu, autora, recenzenta, datum provere i izvor`, () => {
       const result = validateArticleForPublish(
         articleWith({
           editorialTier: tier,
           legalReviewed: true,
+          cluster: undefined,
           author: undefined,
           reviewedBy: undefined,
           reviewDate: undefined,
@@ -174,10 +249,24 @@ describe("Ista kapija važi za sve nivoe kontrole", () => {
         }),
       );
 
+      expect(hasCode(result, "MISSING_CLUSTER")).toBe(true);
       expect(hasCode(result, "MISSING_AUTHOR")).toBe(true);
       expect(hasCode(result, "MISSING_REVIEWER")).toBe(true);
       expect(hasCode(result, "MISSING_REVIEW_DATE")).toBe(true);
       expect(hasCode(result, "MISSING_REFERENCES")).toBe(true);
+      expect(result.ok).toBe(false);
+    });
+
+    it(`nivo „${tier}" ne prihvata nepotpun izvor`, () => {
+      const result = validateArticleForPublish(
+        articleWith({
+          editorialTier: tier,
+          legalReviewed: true,
+          references: [{}],
+        }),
+      );
+
+      expect(hasCode(result, "INCOMPLETE_REFERENCE")).toBe(true);
       expect(result.ok).toBe(false);
     });
   }
@@ -253,6 +342,40 @@ describe("Zabranjeni sadržajni blokovi", () => {
 
   it("dozvoljena lista blokova je zatvorena i minimalna", () => {
     expect(ALLOWED_CONTENT_BLOCK_TYPES).toEqual(["block", "imageWithCaption"]);
+  });
+});
+
+describe("Prenos nalaza u Sanity (bez pokretanja studija)", () => {
+  it("blokirajući nalazi se prenose kao greška", () => {
+    const result = validateArticleForPublish({});
+    const poruka = formatIssuesForSanity(result);
+
+    expect(poruka).not.toBe(true);
+    expect(typeof poruka).toBe("string");
+    expect(String(poruka)).toContain("recenzent");
+  });
+
+  it("upozorenja se ne gube — prenose se odvojeno od grešaka", () => {
+    const result = validateArticleForPublish(
+      articleWith({
+        seo: { metaTitle: "Prekratko", metaDescription: "Kratko" },
+        clarityChecks: { ...allClarityChecksOk(), C5: "warning" },
+      }),
+    );
+
+    // Nema blokade…
+    expect(formatIssuesForSanity(result)).toBe(true);
+    // …ali upozorenja postoje i imaju tekst.
+    const upozorenja = formatWarningsForSanity(result);
+    expect(upozorenja).not.toBe(true);
+    expect(String(upozorenja)).toContain("Preporučena dužina SEO naslova");
+    expect(String(upozorenja)).toContain("C5");
+  });
+
+  it("kada nema ni grešaka ni upozorenja, oba pravila vraćaju true", () => {
+    const result = validateArticleForPublish(validArticle());
+    expect(formatIssuesForSanity(result)).toBe(true);
+    expect(formatWarningsForSanity(result)).toBe(true);
   });
 });
 

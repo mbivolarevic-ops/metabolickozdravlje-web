@@ -16,6 +16,11 @@ export {
 
 export { validateArticleForPublish, extractVisibleText } from "./publishGuards";
 
+export {
+  formatIssuesForSanity,
+  formatWarningsForSanity,
+} from "./sanityMessages";
+
 export { toArticleInput } from "./adapters";
 
 export type {

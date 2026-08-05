@@ -99,16 +99,33 @@ export function validateArticleForPublish(
     });
   }
 
+  /*
+   * Telo mora imati bar jedan NEPRAZAN tekstualni span. Prazan element
+   * (`body: [{}]`), blok bez tekstualne dece ili blok koji sadrži samo
+   * razmake ne predstavlja tekst i ne sme zadovoljiti obavezno polje.
+   */
   const body = article.body ?? [];
-  if (body.length === 0) {
+  const hasMeaningfulText = body.some((block) =>
+    (block.children ?? []).some((child) => hasText(child.text)),
+  );
+
+  if (!hasMeaningfulText) {
     issues.push({
       code: "MISSING_BODY",
-      message: "Članak nema tekst.",
+      message: "Članak nema tekst. Potreban je bar jedan neprazan pasus.",
       path: "body",
     });
   }
 
   // ——— Atribucija i medicinska kontrola (odluke A i B) ———
+  if (!hasReference(article.cluster)) {
+    issues.push({
+      code: "MISSING_CLUSTER",
+      message: "Članak nije povezan sa temom (klasterom).",
+      path: "cluster",
+    });
+  }
+
   if (!hasReference(article.author)) {
     issues.push({
       code: "MISSING_AUTHOR",
@@ -134,11 +151,28 @@ export function validateArticleForPublish(
     });
   }
 
-  if ((article.references ?? []).length === 0) {
+  /*
+   * „Najmanje jedan izvor" znači najmanje jedan KOMPLETAN izvor. Prazna
+   * stavka (`references: [{}]`) nije izvor — bez naziva i veze niko ne može
+   * proveriti tvrdnju, a upravo je provera smisao pravila (docs/03 §7.3).
+   */
+  const references = article.references ?? [];
+  if (references.length === 0) {
     issues.push({
       code: "MISSING_REFERENCES",
       message: "Članak nema nijedan naveden izvor. Potreban je najmanje jedan.",
       path: "references",
+    });
+  } else {
+    references.forEach((reference, index) => {
+      if (!hasText(reference.label) || !hasText(reference.url)) {
+        issues.push({
+          code: "INCOMPLETE_REFERENCE",
+          message:
+            "Izvor je nepotpun. Svaki izvor mora imati naziv i vezu ka izvoru koji je otvoren i pročitan.",
+          path: `references[${index}]`,
+        });
+      }
     });
   }
 
@@ -151,7 +185,13 @@ export function validateArticleForPublish(
     });
   }
 
-  // ——— SEO (docs/03 §4) ———
+  /*
+   * SEO (docs/03 §4), po odluci vlasnika:
+   *  - PRISUSTVO SEO naslova i opisa je blokirajuće;
+   *  - preporučene dužine (50–60 i 140–155) su UPOZORENJA i ne blokiraju
+   *    objavu. Urednik ih vidi, ali tekst koji je tačan i proveren ne sme
+   *    ostati neobjavljen zbog nekoliko znakova.
+   */
   const metaTitle = article.seo?.metaTitle;
   const metaDescription = article.seo?.metaDescription;
 
@@ -165,9 +205,9 @@ export function validateArticleForPublish(
     metaTitle.trim().length < SEO_TITLE_MIN ||
     metaTitle.trim().length > SEO_TITLE_MAX
   ) {
-    issues.push({
+    warnings.push({
       code: "SEO_TITLE_LENGTH",
-      message: `SEO naslov mora imati između ${SEO_TITLE_MIN} i ${SEO_TITLE_MAX} znakova.`,
+      message: `Preporučena dužina SEO naslova je ${SEO_TITLE_MIN}–${SEO_TITLE_MAX} znakova.`,
       path: "seo.metaTitle",
     });
   }
@@ -182,9 +222,9 @@ export function validateArticleForPublish(
     metaDescription.trim().length < SEO_DESCRIPTION_MIN ||
     metaDescription.trim().length > SEO_DESCRIPTION_MAX
   ) {
-    issues.push({
+    warnings.push({
       code: "SEO_DESCRIPTION_LENGTH",
-      message: `SEO opis mora imati između ${SEO_DESCRIPTION_MIN} i ${SEO_DESCRIPTION_MAX} znakova.`,
+      message: `Preporučena dužina SEO opisa je ${SEO_DESCRIPTION_MIN}–${SEO_DESCRIPTION_MAX} znakova.`,
       path: "seo.metaDescription",
     });
   }
