@@ -1,5 +1,10 @@
 import { createClient, type SanityClient } from "@sanity/client";
-import { announceSanityConfig, readSanityConfig } from "./env";
+import {
+  announceSanityConfig,
+  readSanityConfig,
+  readSanityConfigState,
+  type SanityConfig,
+} from "./env";
 
 /**
  * Jedina tačka pristupa Sanity Content Lake-u.
@@ -15,13 +20,10 @@ import { announceSanityConfig, readSanityConfig } from "./env";
 
 let cachedClient: SanityClient | undefined;
 
-export function getSanityClient(): SanityClient {
-  if (cachedClient !== undefined) return cachedClient;
-
-  const config = readSanityConfig();
+function createReadOnlyClient(config: SanityConfig): SanityClient {
   announceSanityConfig(config);
 
-  cachedClient = createClient({
+  return createClient({
     projectId: config.projectId,
     dataset: config.dataset,
     apiVersion: config.apiVersion,
@@ -38,7 +40,35 @@ export function getSanityClient(): SanityClient {
     // Token se NE prosleđuje. Datasetovi su javni, pa za čitanje objavljenog
     // sadržaja nije potreban — a svaka nepotrebna tajna je suvišan rizik.
   });
+}
 
+/**
+ * Strogi klijent. Baca ako konfiguracija nedostaje ili nije ispravna.
+ * Koristi se svuda gde sadržaj MORA postojati.
+ */
+export function getSanityClient(): SanityClient {
+  if (cachedClient !== undefined) return cachedClient;
+
+  cachedClient = createReadOnlyClient(readSanityConfig());
+  return cachedClient;
+}
+
+/**
+ * Klijent koji sme da izostane.
+ *
+ * Vraća `null` SAMO kada obe promenljive potpuno nedostaju — dakle kada
+ * Sanity uopšte nije podešen. Delimična ili nevalidna konfiguracija i dalje
+ * BACA: to nije „nema sadržaja“, nego greška u podešavanju.
+ *
+ * Nikada ne pada na `production` i nema podrazumevani dataset.
+ */
+export function getOptionalSanityClient(): SanityClient | null {
+  if (cachedClient !== undefined) return cachedClient;
+
+  const state = readSanityConfigState();
+  if (state.status === "not-configured") return null;
+
+  cachedClient = createReadOnlyClient(state.config);
   return cachedClient;
 }
 

@@ -81,6 +81,46 @@ export function readSanityConfig(): SanityConfig {
   return { projectId, dataset, apiVersion: SANITY_API_VERSION };
 }
 
+/**
+ * Stanje konfiguracije.
+ *
+ * Razlikuju se DVA bitno različita slučaja koja se lako pobrkaju:
+ *
+ *  - `not-configured` — obe promenljive potpuno nedostaju. To je legitimno
+ *    stanje: projekat se može klonirati i izgraditi bez Sanity podešavanja,
+ *    a sajt tada pošteno prikazuje da sadržaja nema.
+ *
+ *  - GREŠKA — konfiguracija je DELIMIČNA ili NEVALIDNA (samo project ID, samo
+ *    dataset, nevalidna vrednost). To nikada nije legitimno: znači da je neko
+ *    nameravao da podesi Sanity i pogrešio. Tiho nastavljanje bi objavilo
+ *    prazan sajt kao da je tako i trebalo.
+ */
+export type SanityConfigState =
+  { status: "configured"; config: SanityConfig } | { status: "not-configured" };
+
+function isAbsent(value: string | undefined): boolean {
+  return value === undefined || value.trim().length === 0;
+}
+
+/**
+ * Vraća stanje konfiguracije.
+ *
+ * Ako obe promenljive nedostaju → `not-configured`.
+ * U svakom drugom slučaju delegira na `readSanityConfig()`, koji baca jasnu
+ * grešku za delimičnu ili nevalidnu konfiguraciju. Nema fallback-a i nema
+ * podrazumevanog dataseta.
+ */
+export function readSanityConfigState(): SanityConfigState {
+  const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+  const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
+
+  if (isAbsent(projectId) && isAbsent(dataset)) {
+    return { status: "not-configured" };
+  }
+
+  return { status: "configured", config: readSanityConfig() };
+}
+
 /** Ispis konfiguracije se radi najviše jednom po procesu. */
 let configAnnounced = false;
 
