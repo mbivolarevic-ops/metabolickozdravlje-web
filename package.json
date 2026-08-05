@@ -13,6 +13,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "studio:dev": "sanity dev --host 127.0.0.1 --port 3333",
+    "studio:build": "sanity build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
@@ -35,6 +37,7 @@
     "jsdom": "^30",
     "prettier": "^3",
     "sanity": "^6.9.0",
+    "styled-components": "^6.5.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4"

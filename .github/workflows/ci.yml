@@ -36,3 +36,10 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Sanity Studio se ovde samo gradi, nikada ne objavljuje.
+      # Project ID nije tajna, pa stoji kao repository variable, ne secret.
+      - name: Studio build
+        run: npm run studio:build
+        env:
+          SANITY_STUDIO_PROJECT_ID: ${{ vars.SANITY_STUDIO_PROJECT_ID }}
