@@ -34,8 +34,14 @@ jobs:
       - name: Test
         run: npm test
 
+      # Frontend se gradi nad JAVNIM `staging` datasetom. Vrednosti nisu tajne,
+      # pa stoje kao repository variables. Ako upit padne, build mora pasti —
+      # prazan rezultat se ne sme objaviti kao ispravan sajt.
       - name: Build
         run: npm run build
+        env:
+          NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ vars.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+          NEXT_PUBLIC_SANITY_DATASET: ${{ vars.NEXT_PUBLIC_SANITY_DATASET }}
 
       # Sanity Studio se ovde samo gradi, nikada ne objavljuje.
       # Project ID nije tajna, pa stoji kao repository variable, ne secret.
