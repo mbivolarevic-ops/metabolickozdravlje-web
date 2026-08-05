@@ -64,9 +64,25 @@ skripte i Studio nije objavljen.
 
 ### CORS i pristup
 
-CORS se **sada ne podešava**. Trebaće tek kada se Next.js aplikacija bude
-povezivala sa Sanity-jem ili kada Studio bude hostovan — i tada uz izričito
-odobrenje vlasnika.
+**U ovom PR-u se CORS ne menja.**
+
+Kada za to dođe vreme, važi sledeće — i to je uža potreba nego što se obično
+pretpostavlja:
+
+- **Studio objavljen preko `sanity deploy`** dobija odgovarajuću CORS
+  konfiguraciju za svoj `*.sanity.studio` origin **automatski**. Za taj
+  scenario nije potreban ručni zapis.
+- **Serverski upiti iz Next.js aplikacije ne zahtevaju CORS.** CORS je
+  browserski mehanizam; upit koji polazi sa servera (server komponenta, route
+  handler, build korak) nije pod tim ograničenjem.
+- **Ručni CORS zapis potreban je samo** ako browser direktno poziva Content
+  Lake API, ili ako se Studio hostuje samostalno odnosno ugrađuje u drugu
+  aplikaciju (npr. na `/studio` javnog sajta — što je ovde odbačeno).
+- **Origin sa `credentials`** odobrava se isključivo kada je zaista potreban za
+  autentifikovan Studio. Za javno čitanje objavljenog sadržaja nije potreban, a
+  svaki takav origin proširuje površinu rizika.
+
+Svaka buduća izmena CORS-a traži izričito odobrenje vlasnika.
 
 Vlasnik je trenutno **jedini administrator** projekta. Stručni recenzent je
 dokument u modelu sadržaja (`medicalReviewer`), a ne Sanity korisnička uloga;
