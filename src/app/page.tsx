@@ -19,7 +19,7 @@ import { TrustBar } from "@/components/home/TrustBar";
  */
 const ENTRY_POINTS = [
   {
-    title: "Dobio/la sam nalaz koji ne razumem",
+    title: "Imam nalaz koji ne razumem",
     description:
       "Objašnjenja pojmova koji se pojavljuju u laboratorijskim nalazima, običnim jezikom.",
   },
@@ -31,7 +31,7 @@ const ENTRY_POINTS = [
   {
     title: "U porodici ima dijabetesa",
     description:
-      "Šta se priprema o prevenciji i koja pitanja se mogu poneti lekaru.",
+      "Tekstovi o porodičnoj istoriji i pitanjima koja se mogu poneti lekaru.",
   },
 ] as const;
 
@@ -51,15 +51,16 @@ const TOPICS = [
   },
   {
     title: "Predijabetes",
-    description: "Šta nalaz znači i koja pitanja se mogu postaviti lekaru.",
+    description: "Objašnjenje pojma i pitanja za razgovor sa lekarom.",
   },
   {
     title: "Metabolički sindrom",
-    description: "Krovni pojam koji povezuje ostale teme.",
+    description: "Objašnjenje pojma i pitanja za razgovor sa lekarom.",
   },
   {
     title: "Masna jetra",
-    description: "Tema u pripremi, uz isti postupak provere kao ostale.",
+    description:
+      "Objašnjenje pojma i načina na koji se o ovoj temi razgovara sa lekarom.",
   },
 ] as const;
 
@@ -78,7 +79,7 @@ const METHOD = [
   {
     title: "Transparentni izvori",
     description:
-      "Koriste se smernice i recenzirani izvori, i navode se uz tekst.",
+      "Koriste se smernice i recenzirani izvori, koji se navode uz tekst.",
   },
   {
     title: "Edukacija, ne individualni savet",
@@ -100,7 +101,7 @@ export default function HomePage() {
           </h1>
           <div className="mt-4 max-w-[var(--container-prose)]">
             <p className="text-lg">
-              Edukativna platforma o metaboličkom zdravlju je u pripremi.
+              Pripremamo edukativnu platformu o metaboličkom zdravlju.
             </p>
             <p className="mt-3">
               Cilj platforme je da pomogne čitaocu da razume sopstveno
@@ -108,8 +109,8 @@ export default function HomePage() {
               sa svojim lekarom.
             </p>
             <p className="mt-3 text-text-muted">
-              Tekstovi se pripremaju i još nisu objavljeni. Ova stranica
-              prikazuje strukturu i način rada, ne gotov sadržaj.
+              Tekstovi još nisu objavljeni. Ova stranica prikazuje strukturu i
+              način rada platforme.
             </p>
           </div>
         </Container>
@@ -128,10 +129,10 @@ export default function HomePage() {
 
       <section aria-labelledby="ulazne-tacke">
         <Container className="border-t border-border py-12">
-          <SectionHeading id="ulazne-tacke" title="Odakle će se moći početi">
-            Sadržaj se priprema tako da se do njega dolazi kroz situaciju u
-            kojoj se čitalac prepoznaje, a ne kroz medicinski termin. Ovo su
-            opisi, još ne i odredišta.
+          <SectionHeading id="ulazne-tacke" title="Kako ćete moći da počnete">
+            Sadržaj organizujemo prema situacijama u kojima se čitalac može
+            prepoznati, a ne samo prema medicinskim terminima. Ovo su planirani
+            načini pristupa; odredišta još nisu objavljena.
           </SectionHeading>
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
             {ENTRY_POINTS.map((item) => (
@@ -148,8 +149,8 @@ export default function HomePage() {
       <section aria-labelledby="teme">
         <Container className="border-t border-border py-12">
           <SectionHeading id="teme" title="Teme koje se pripremaju">
-            Redosled prati prioritete iz projektne dokumentacije. Nijedan tekst
-            iz ovih tema još nije objavljen.
+            Ovo su prve oblasti za koje pripremamo sadržaj. Tekstovi još nisu
+            objavljeni.
           </SectionHeading>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {TOPICS.map((item) => (
@@ -166,8 +167,7 @@ export default function HomePage() {
       <section aria-labelledby="nacin-rada">
         <Container className="border-t border-border py-12">
           <SectionHeading id="nacin-rada" title="Kako će nastajati sadržaj">
-            Postupak je isti za svaki tekst i opisan je u uređivačkim
-            dokumentima platforme.
+            Svaki tekst prolazi isti postupak pre objavljivanja.
           </SectionHeading>
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {METHOD.map((item) => (

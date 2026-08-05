@@ -74,7 +74,7 @@ describe("Početna stranica", () => {
     render(<HomePage />);
     expect(
       screen.getByText(
-        "Edukativna platforma o metaboličkom zdravlju je u pripremi.",
+        "Pripremamo edukativnu platformu o metaboličkom zdravlju.",
       ),
     ).toBeInTheDocument();
   });
@@ -97,10 +97,18 @@ describe("Početna stranica", () => {
   });
 
   it("hero jasno označava da je sadržaj u pripremi", () => {
-    render(<HomePage />);
-    expect(screen.getByText("Sadržaj je u pripremi")).toBeInTheDocument();
+    const { container } = render(<HomePage />);
+    const hero = container.querySelector<HTMLElement>(
+      'section[aria-labelledby="naslov-platforme"]',
+    );
+    expect(hero).not.toBeNull();
+
+    const uHerou = within(hero as HTMLElement);
+    expect(uHerou.getByText("Sadržaj je u pripremi")).toBeInTheDocument();
     expect(
-      screen.getByText(/Tekstovi se pripremaju i još nisu objavljeni/),
+      uHerou.getByText(
+        "Tekstovi još nisu objavljeni. Ova stranica prikazuje strukturu i način rada platforme.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -126,9 +134,7 @@ describe("Početna stranica", () => {
   it("renderuje ulazne tačke i teme koje se pripremaju", () => {
     render(<HomePage />);
     // ulazne tačke
-    expect(
-      screen.getByText("Dobio/la sam nalaz koji ne razumem"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Imam nalaz koji ne razumem")).toBeInTheDocument();
     expect(
       screen.getByText("Teško regulišem telesnu masu"),
     ).toBeInTheDocument();
