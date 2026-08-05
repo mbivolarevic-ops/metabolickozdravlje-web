@@ -78,6 +78,10 @@ web_modules/
 .next
 out
 
+# Sanity Studio — lokalni runtime koji CLI generiše pri `sanity dev`/`build`.
+# Build izlaz (`dist/`) je već pokriven pravilom niže.
+.sanity/
+
 # Nuxt.js build / generate output
 .nuxt
 dist

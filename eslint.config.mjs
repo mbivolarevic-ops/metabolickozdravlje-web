@@ -13,6 +13,10 @@ const eslintConfig = defineConfig([
     "build/**",
     "coverage/**",
     "next-env.d.ts",
+    // Generisani izlazi Sanity Studija — build rezultat i lokalni runtime.
+    // Tuđi, minifikovani kod se ne lintuje.
+    "dist/**",
+    ".sanity/**",
   ]),
 ]);
 
