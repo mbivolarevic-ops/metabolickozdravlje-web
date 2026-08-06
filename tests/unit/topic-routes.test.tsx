@@ -165,19 +165,30 @@ describe("/teme/[cluster]", () => {
     );
   });
 
-  it("27, 28 — sažeci nisu linkovi i nema linka ka stranici članka", async () => {
+  /*
+   * Ranije je ova provera tvrdila da sažeci NISU linkovi, jer stranica članka
+   * nije postojala. Sada postoji `/tekstovi/[slug]`, pa se proverava suprotno:
+   * naslov vodi tačno tamo, i to je jedini link u kartici.
+   *
+   * Adresa i dalje ne sme da sadrži slug teme — članak koji promeni temu ne
+   * sme da izgubi objavljenu adresu.
+   */
+  it("27, 28 — naslov sažetka vodi na stranicu članka, van putanje teme", async () => {
     getTopic.mockResolvedValue(TOPIC);
     getTopicArticleSummaries.mockResolvedValue([SUMMARY]);
 
     const { container } = render(await TopicPage(params("test-tema")));
 
     const item = screen.getByRole("listitem");
-    expect(within(item).queryByRole("link")).toBeNull();
+    const links = within(item).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName("Test članak");
+    expect(links[0]).toHaveAttribute("href", "/tekstovi/test-clanak");
 
     const hrefs = Array.from(container.querySelectorAll("a")).map((a) =>
       a.getAttribute("href"),
     );
-    expect(hrefs).toEqual(["/teme"]);
+    expect(hrefs).toEqual(["/teme", "/tekstovi/test-clanak"]);
     for (const href of hrefs) {
       expect(href).not.toContain("/teme/test-tema/");
     }
