@@ -127,13 +127,13 @@ export default async function ArticlePage({
         ]}
       />
 
-      <p className="mt-6 font-sans text-sm text-text-muted">
-        <Link href={`/teme/${article.cluster.slug}`}>
-          {article.cluster.title}
-        </Link>
-      </p>
-
-      <h1 className="mt-2 max-w-[var(--container-prose)]">{article.title}</h1>
+      {/*
+       * Tema se NE ponavlja kao zaseban red iznad naslova. Putanja je već
+       * nosi kao poslednju stavku, pa bi drugi link istog teksta i istog
+       * odredišta bio čitaocu suvišan, a čitaču ekrana bi se pročitao dvaput
+       * zaredom. Vezu nazad nosi imenovani link na dnu teksta.
+       */}
+      <h1 className="mt-6 max-w-[var(--container-prose)]">{article.title}</h1>
 
       <p className="mt-4 max-w-[var(--container-prose)] text-lg">
         {article.excerpt}

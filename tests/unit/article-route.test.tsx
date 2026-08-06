@@ -295,6 +295,47 @@ describe("povezanost sa temom", () => {
     );
   });
 
+  /*
+   * Regresija: tema se ranije pojavljivala i kao poslednja stavka putanje i
+   * kao zaseban red iznad naslova — dva susedna linka istog teksta i istog
+   * odredišta, koja čitač ekrana pročita dvaput zaredom.
+   */
+  it("tema se ne ponavlja kao drugi link istog imena", async () => {
+    getArticle.mockResolvedValue(ARTICLE);
+    render(await ArticlePage(params("test-clanak")));
+
+    const toTopic = screen
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("href") === "/teme/test-tema");
+
+    // Tačno dva: jedan u putanji, jedan imenovani na dnu teksta.
+    expect(toTopic).toHaveLength(2);
+
+    const names = toTopic.map((link) => link.textContent);
+    expect(new Set(names).size).toBe(2);
+  });
+
+  it("naziv teme iznad naslova nosi putanja, ne zaseban link", async () => {
+    getArticle.mockResolvedValue(ARTICLE);
+    render(await ArticlePage(params("test-clanak")));
+
+    const nav = screen.getByRole("navigation", { name: "Putanja" });
+    expect(
+      within(nav).getByRole("link", { name: "Test tema" }),
+    ).toHaveAttribute("href", "/teme/test-tema");
+
+    // Van putanje sme postojati samo imenovani povratni link.
+    const outside = screen
+      .getAllByRole("link")
+      .filter(
+        (link) =>
+          link.getAttribute("href") === "/teme/test-tema" &&
+          !nav.contains(link),
+      );
+    expect(outside).toHaveLength(1);
+    expect(outside[0]).toHaveTextContent(/^Nazad na temu/);
+  });
+
   it("nudi povratak na temu kojoj članak pripada", async () => {
     getArticle.mockResolvedValue(ARTICLE);
     render(await ArticlePage(params("test-clanak")));
