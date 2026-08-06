@@ -10,6 +10,7 @@ import { imageWithCaption } from "./objects/imageWithCaption";
 import { portableText } from "./objects/portableText";
 import { referenceItem } from "./objects/referenceItem";
 import { seo } from "./objects/seo";
+import { videoEmbed } from "./objects/videoEmbed";
 
 /**
  * Registar šema.
@@ -28,6 +29,7 @@ export const schemaTypes: SchemaTypeDefinition[] = [
   // Objekti
   portableText,
   imageWithCaption,
+  videoEmbed,
   referenceItem,
   clarityChecks,
   seo,

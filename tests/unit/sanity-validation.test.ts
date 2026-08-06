@@ -340,8 +340,17 @@ describe("Zabranjeni sadržajni blokovi", () => {
     }
   });
 
+  /*
+   * Lista raste samo uz izričito odobrenje vlasnika. `videoEmbed` je dodat u
+   * PR-u sa stranicom članka; svaki naredni tip traži novu odluku, ne
+   * proširenje ove provere.
+   */
   it("dozvoljena lista blokova je zatvorena i minimalna", () => {
-    expect(ALLOWED_CONTENT_BLOCK_TYPES).toEqual(["block", "imageWithCaption"]);
+    expect(ALLOWED_CONTENT_BLOCK_TYPES).toEqual([
+      "block",
+      "imageWithCaption",
+      "videoEmbed",
+    ]);
   });
 });
 

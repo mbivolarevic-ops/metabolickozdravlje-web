@@ -15,6 +15,7 @@
 export const ALLOWED_CONTENT_BLOCK_TYPES: readonly string[] = [
   "block",
   "imageWithCaption",
+  "videoEmbed",
 ] as const;
 
 /**
