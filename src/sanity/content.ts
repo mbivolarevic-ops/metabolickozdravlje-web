@@ -35,6 +35,25 @@ function resolveFetcher(fetcher?: SanityFetcher): SanityFetcher | null {
   return fetcher ?? getOptionalSanityClient();
 }
 
+/**
+ * Upit koji vraća listu MORA vratiti niz.
+ *
+ * Prazan niz je validan rezultat i znači „nema sadržaja“. Bilo koji drugi
+ * oblik (`null`, objekat, string, broj) znači prekršen ugovor upita ili
+ * klijenta — to nije prazan dataset i ne sme tako da izgleda. Zato se baca.
+ *
+ * Poruka namerno ne sadrži ni CMS podatke, ni upit, ni vrednosti okruženja —
+ * samo naziv operacije, da se greška može locirati.
+ */
+function expectArray(value: unknown, operation: string): unknown[] {
+  if (Array.isArray(value)) return value;
+
+  throw new Error(
+    `Sanity upit „${operation}“ nije vratio listu. Odgovor je pogrešnog oblika, ` +
+      "što znači prekršen ugovor upita — a ne prazan dataset.",
+  );
+}
+
 /** Sve teme koje su bezbedne za prikaz. Bez konfiguracije: prazna lista. */
 export async function loadTopics(
   fetcher?: SanityFetcher,
@@ -43,9 +62,8 @@ export async function loadTopics(
   if (client === null) return [];
 
   const result = await client.fetch<unknown>(allClustersQuery);
-  if (!Array.isArray(result)) return [];
 
-  return result.filter(isValidTopic);
+  return expectArray(result, "sve teme").filter(isValidTopic);
 }
 
 /** Jedna tema po slug-u. Nevalidna ili nepostojeća → `null`. */
@@ -74,9 +92,10 @@ export async function loadTopicArticleSummaries(
   const result = await client.fetch<unknown>(articlesByClusterQuery, {
     cluster: slug,
   });
-  if (!Array.isArray(result)) return [];
 
-  return result.filter(isValidArticleSummary);
+  return expectArray(result, "sažeci članaka teme").filter(
+    isValidArticleSummary,
+  );
 }
 
 /** Slug vrednosti validnih tema — za `generateStaticParams`. */

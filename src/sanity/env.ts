@@ -86,35 +86,35 @@ export function readSanityConfig(): SanityConfig {
  *
  * Razlikuju se DVA bitno različita slučaja koja se lako pobrkaju:
  *
- *  - `not-configured` — obe promenljive potpuno nedostaju. To je legitimno
- *    stanje: projekat se može klonirati i izgraditi bez Sanity podešavanja,
- *    a sajt tada pošteno prikazuje da sadržaja nema.
+ *  - `not-configured` — obe promenljive su STVARNO odsutne (`undefined`). To
+ *    je legitimno stanje: projekat se može klonirati i izgraditi bez Sanity
+ *    podešavanja, a sajt tada pošteno prikazuje da sadržaja nema.
  *
- *  - GREŠKA — konfiguracija je DELIMIČNA ili NEVALIDNA (samo project ID, samo
- *    dataset, nevalidna vrednost). To nikada nije legitimno: znači da je neko
- *    nameravao da podesi Sanity i pogrešio. Tiho nastavljanje bi objavilo
- *    prazan sajt kao da je tako i trebalo.
+ *  - GREŠKA — konfiguracija je DELIMIČNA, PRAZNA ili NEVALIDNA. To nikada
+ *    nije legitimno: znači da je neko nameravao da podesi Sanity i pogrešio.
+ *    Tiho nastavljanje bi objavilo prazan sajt kao da je tako i trebalo.
  */
 export type SanityConfigState =
   { status: "configured"; config: SanityConfig } | { status: "not-configured" };
 
-function isAbsent(value: string | undefined): boolean {
-  return value === undefined || value.trim().length === 0;
-}
-
 /**
  * Vraća stanje konfiguracije.
  *
- * Ako obe promenljive nedostaju → `not-configured`.
- * U svakom drugom slučaju delegira na `readSanityConfig()`, koji baca jasnu
- * grešku za delimičnu ili nevalidnu konfiguraciju. Nema fallback-a i nema
- * podrazumevanog dataseta.
+ * `not-configured` je moguć ISKLJUČIVO kada su obe promenljive `undefined` —
+ * dakle kada ih niko nije ni postavio.
+ *
+ * Prazan string ili sami razmaci NISU odsustvo. Prazna GitHub repository
+ * variable ili prazan red u `.env` znače pogrešnu konfiguraciju, ne „Sanity
+ * nije podešen“. Takav slučaj ide u `readSanityConfig()`, koji baca — jer bi
+ * inače prazna vrednost tiho proizvela prazan sajt koji izgleda ispravno.
+ *
+ * Nema fallback-a i nema podrazumevanog dataseta.
  */
 export function readSanityConfigState(): SanityConfigState {
   const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
   const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET;
 
-  if (isAbsent(projectId) && isAbsent(dataset)) {
+  if (projectId === undefined && dataset === undefined) {
     return { status: "not-configured" };
   }
 

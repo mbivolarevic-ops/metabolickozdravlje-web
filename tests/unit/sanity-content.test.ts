@@ -141,6 +141,44 @@ describe("Stanja Sanity konfiguracije", () => {
   });
 });
 
+/**
+ * Prazna vrednost NIJE odsustvo.
+ *
+ * Prazna GitHub repository variable ili prazan red u `.env` znače pogrešnu
+ * konfiguraciju, ne „Sanity nije podešen“. Da se tretiraju kao odsustvo,
+ * build bi tiho proizveo prazan sajt koji izgleda ispravno.
+ */
+describe("Prazne i whitespace vrednosti moraju oboriti build", () => {
+  it("1 — obe stvarno odsutne (undefined) daju not-configured", async () => {
+    setEnv(undefined, undefined);
+    const { readSanityConfigState } = await import("@/sanity/env");
+    expect(readSanityConfigState().status).toBe("not-configured");
+  });
+
+  it.each([
+    ["2 — obe prazan string", "", ""],
+    ["3 — obe samo razmaci", "   ", "  \t "],
+    ["4 — prazan project ID + odsutan dataset", "", undefined],
+    ["5 — odsutan project ID + prazan dataset", undefined, ""],
+    ["6 — validan project ID + prazan dataset", "testprojekat1", ""],
+    ["7 — prazan project ID + staging", "", "staging"],
+    ["7b — whitespace project ID + staging", "   ", "staging"],
+    ["7c — validan project ID + whitespace dataset", "testprojekat1", "   "],
+  ])("%s → greška", async (_label, projectId, dataset) => {
+    setEnv(projectId, dataset);
+    const { readSanityConfigState } = await import("@/sanity/env");
+
+    expect(() => readSanityConfigState()).toThrow();
+    expect(readSanityConfigState).not.toThrowError(/not-configured/);
+  });
+
+  it("prazna vrednost ne daje opcioni klijent, nego baca", async () => {
+    setEnv("", "");
+    const { getOptionalSanityClient } = await import("@/sanity/client");
+    expect(() => getOptionalSanityClient()).toThrow();
+  });
+});
+
 describe("Provere validnosti sadržaja", () => {
   it("prihvata validnu temu i validan sažetak", () => {
     expect(isValidTopic(VALID_TOPIC)).toBe(true);
@@ -296,6 +334,75 @@ describe("Content loaderi", () => {
       fetcherReturning([VALID_TOPIC, { ...VALID_TOPIC, _id: "t2", slug: "" }]),
     );
     expect(slugs).toEqual(["test-tema"]);
+  });
+
+  it("pravi prazan niz ostaje uspešno prazna lista", async () => {
+    await expect(loadTopics(fetcherReturning([]))).resolves.toEqual([]);
+    await expect(
+      loadTopicArticleSummaries("x", fetcherReturning([])),
+    ).resolves.toEqual([]);
+    await expect(loadTopicSlugs(fetcherReturning([]))).resolves.toEqual([]);
+  });
+
+  it.each([
+    ["null", null],
+    ["undefined", undefined],
+    ["objekat", { nije: "niz" }],
+    ["string", "nije niz"],
+    ["broj", 42],
+  ])("loadTopics odbija malformiran odgovor: %s", async (_label, value) => {
+    await expect(loadTopics(fetcherReturning(value))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it.each([
+    ["null", null],
+    ["undefined", undefined],
+    ["objekat", { nije: "niz" }],
+    ["string", "nije niz"],
+    ["broj", 42],
+  ])(
+    "loadTopicArticleSummaries odbija malformiran odgovor: %s",
+    async (_label, value) => {
+      await expect(
+        loadTopicArticleSummaries("x", fetcherReturning(value)),
+      ).rejects.toThrow(/nije vratio listu/);
+    },
+  );
+
+  it("malformiran odgovor NE postaje prazna lista", async () => {
+    const result = await loadTopics(fetcherReturning(null)).then(
+      (value) => ({ resolved: value }),
+      (error: unknown) => ({ error }),
+    );
+
+    expect("error" in result).toBe(true);
+    expect("resolved" in result).toBe(false);
+  });
+
+  it("greška zbog oblika ne otkriva CMS podatke ni upit", async () => {
+    const secretish = { tajniPodatak: "ne sme se videti", _id: "doc-1" };
+
+    await expect(loadTopics(fetcherReturning(secretish))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+
+    const message = await loadTopics(fetcherReturning(secretish)).catch(
+      (error: unknown) => String(error),
+    );
+    expect(message).not.toContain("ne sme se videti");
+    expect(message).not.toContain("doc-1");
+    expect(message).not.toContain("_type ==");
+    expect(message).not.toContain("jjinmc3k");
+  });
+
+  it("loadTopic i dalje vraća null za null i za nevalidan dokument", async () => {
+    // Pojedinačan rezultat zadržava prethodno odobreno ponašanje.
+    expect(await loadTopic("x", fetcherReturning(null))).toBeNull();
+    expect(
+      await loadTopic("x", fetcherReturning({ ...VALID_TOPIC, title: null })),
+    ).toBeNull();
   });
 
   it("upit za temu prosleđuje slug kao parametar", async () => {
