@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  loadArticle,
+  loadArticleSlugs,
   loadTopic,
   loadTopicArticleSummaries,
   loadTopicSlugs,
@@ -409,5 +411,155 @@ describe("Content loaderi", () => {
     const fetcher = fetcherReturning(VALID_TOPIC);
     await loadTopic("test-tema", fetcher);
     expect(fetcher.calls[0]?.params).toEqual({ cluster: "test-tema" });
+  });
+});
+
+/**
+ * `loadArticle` razlikuje TRI ishoda: `null` (nema članka ili nije prikaziv),
+ * grešku (odgovor pogrešnog OBLIKA) i članak. Ta razlika je ovde i testirana,
+ * jer bi njeno urušavanje značilo da se kvar prikaže kao „nema teksta“.
+ */
+const VALID_ARTICLE = {
+  _id: "article-1",
+  title: "Test članak",
+  slug: "test-clanak",
+  excerpt: "Ovo je sintetički opis za test.",
+  reviewDate: "2026-08-05",
+  cluster: { title: "Test tema", slug: "test-tema" },
+  author: { name: "Test Autor", credentials: "Sintetička kvalifikacija" },
+  reviewer: { name: "Test Recenzent", credentials: "Sintetička licenca" },
+  references: [{ label: "Sintetički izvor", url: "https://primer.rs/izvor" }],
+  body: [
+    {
+      _type: "block",
+      _key: "b1",
+      style: "normal",
+      markDefs: [],
+      children: [
+        { _type: "span", _key: "s1", text: "Telo teksta.", marks: [] },
+      ],
+    },
+  ],
+};
+
+describe("Loader članka", () => {
+  it("validan članak prolazi obe kapije", async () => {
+    const article = await loadArticle(
+      "test-clanak",
+      fetcherReturning(VALID_ARTICLE),
+    );
+    expect(article?.slug).toBe("test-clanak");
+  });
+
+  it("prosleđuje slug kao parametar upita", async () => {
+    const fetcher = fetcherReturning(VALID_ARTICLE);
+    await loadArticle("test-clanak", fetcher);
+    expect(fetcher.calls[0]?.params).toEqual({ slug: "test-clanak" });
+  });
+
+  it("nepostojeći članak je null, ne greška", async () => {
+    expect(await loadArticle("x", fetcherReturning(null))).toBeNull();
+    expect(await loadArticle("x", fetcherReturning(undefined))).toBeNull();
+  });
+
+  it.each([
+    ["bez recenzenta", { reviewer: null }],
+    ["bez autora", { author: { name: "Test Autor", credentials: "" } }],
+    ["bez datuma provere", { reviewDate: null }],
+    ["nemoguć datum provere", { reviewDate: "2026-02-31" }],
+    ["bez izvora", { references: [] }],
+    ["nepotpun izvor", { references: [{ label: "Bez adrese" }] }],
+    ["bez teme", { cluster: null }],
+  ])("članak %s se ne prikazuje", async (_label, override) => {
+    expect(
+      await loadArticle(
+        "x",
+        fetcherReturning({ ...VALID_ARTICLE, ...override }),
+      ),
+    ).toBeNull();
+  });
+
+  it("članak sa neispravnim medijem u telu se ne prikazuje", async () => {
+    const withBadVideo = {
+      ...VALID_ARTICLE,
+      body: [
+        ...VALID_ARTICLE.body,
+        {
+          _type: "videoEmbed",
+          _key: "v1",
+          provider: "youtube",
+          url: "https://napadac.rs/embed/zlo",
+          title: "Naslov",
+          transcript: "Transkript.",
+        },
+      ],
+    };
+
+    expect(await loadArticle("x", fetcherReturning(withBadVideo))).toBeNull();
+  });
+
+  it("članak sa nepoznatim blokom u telu se ne prikazuje", async () => {
+    const withUnknownBlock = {
+      ...VALID_ARTICLE,
+      body: [...VALID_ARTICLE.body, { _type: "priceTable", _key: "p1" }],
+    };
+
+    expect(
+      await loadArticle("x", fetcherReturning(withUnknownBlock)),
+    ).toBeNull();
+  });
+
+  it.each([
+    ["niz", [VALID_ARTICLE]],
+    ["string", "nije dokument"],
+    ["broj", 42],
+  ])("odgovor pogrešnog oblika (%s) baca", async (_label, value) => {
+    await expect(loadArticle("x", fetcherReturning(value))).rejects.toThrow(
+      /nije vratio dokument/,
+    );
+  });
+
+  it("greška zbog oblika ne otkriva CMS podatke ni upit", async () => {
+    const message = await loadArticle(
+      "x",
+      fetcherReturning(["tajni sadržaj dokumenta"]),
+    ).catch((error: unknown) => String(error));
+
+    expect(message).not.toContain("tajni sadržaj dokumenta");
+    expect(message).not.toContain("_type ==");
+    expect(message).not.toContain("jjinmc3k");
+  });
+
+  it("odbijen fetch se propagira", async () => {
+    await expect(loadArticle("x", rejectingFetcher)).rejects.toThrow(
+      "mrežna greška",
+    );
+  });
+
+  it("slug-ovi za statičke parametre preskaču prazne i neispravne vrednosti", async () => {
+    const slugs = await loadArticleSlugs(
+      fetcherReturning([
+        { slug: "test-clanak" },
+        { slug: "" },
+        { slug: null },
+        {},
+        "nije objekat",
+      ]),
+    );
+    expect(slugs).toEqual(["test-clanak"]);
+  });
+
+  it("malformiran odgovor za slug-ove baca, ne postaje prazna lista", async () => {
+    await expect(loadArticleSlugs(fetcherReturning(null))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it("bez konfiguracije članak je null, a lista slug-ova prazna", async () => {
+    setEnv(undefined, undefined);
+    const content = await import("@/sanity/content");
+
+    expect(await content.loadArticle("bilo-sta")).toBeNull();
+    expect(await content.loadArticleSlugs()).toEqual([]);
   });
 });

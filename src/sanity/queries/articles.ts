@@ -70,6 +70,26 @@ export const articleBySlugQuery = defineQuery(`
     }
 `);
 
+/**
+ * Jedan članak samo po sopstvenom slug-u.
+ *
+ * Ruta `/tekstovi/[slug]` namerno ne zavisi od teme: promena teme ne sme da
+ * pokvari adresu objavljenog teksta. Tema i dalje dolazi u projekciji, jer je
+ * potrebna za breadcrumb i vezu nazad.
+ */
+export const articleBySlugOnlyQuery = defineQuery(`
+  *[${PUBLISHABLE} && slug.current == $slug][0] {
+      ${ARTICLE_PROJECTION}
+    }
+`);
+
+/** Slug vrednosti objavljivih članaka — za `generateStaticParams`. */
+export const publishableArticlePathsQuery = defineQuery(`
+  *[${PUBLISHABLE}] {
+    "slug": slug.current
+  }
+`);
+
 /** Parovi (tema, članak) za buduće generisanje statičkih putanja. */
 export const publishableArticleSlugsQuery = defineQuery(`
   *[${PUBLISHABLE}] {
