@@ -60,6 +60,20 @@ export function isValidBodyImage(value: unknown): boolean {
   return hasText(value.alt);
 }
 
+/**
+ * Naslovna slika je OPCIONA.
+ *
+ * Odsustvo je uredna, dozvoljena situacija — članak bez naslovne slike je
+ * potpuno ispravan članak. Ali slika koja POSTOJI mora biti potpuno ispravna:
+ * delimična ili nevalidna naslovna slika obara ceo članak, isto kao slika u
+ * telu. Prikazati sliku bez opisa značilo bi objaviti nedostupan sadržaj, a
+ * prikazati je bez asseta znači prazan okvir na vrhu medicinskog teksta.
+ */
+export function isAcceptableFeaturedImage(value: unknown): boolean {
+  if (value === undefined || value === null) return true;
+  return isValidBodyImage(value);
+}
+
 /** Video je ispravan ako se iz njega može sastaviti bezbedna embed adresa. */
 export function isValidBodyVideo(value: unknown): boolean {
   if (!isRecord(value)) return false;

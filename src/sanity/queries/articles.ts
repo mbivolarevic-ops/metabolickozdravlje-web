@@ -30,6 +30,29 @@ const PUBLISHABLE = `
   && count(references) > 0
 `;
 
+/**
+ * Naslovna slika — namerno uska projekcija.
+ *
+ * Povlači se tačno ono što treba za prikaz: opis, potpis, izvor, izabrani
+ * isečak i fokus, plus identifikator asseta i njegove dimenzije. Asset se
+ * dereferencira zbog dimenzija; ostatak zapisa o fajlu (URL, paleta, naziv
+ * originala, podaci o otpremanju) se NE povlači — to su podaci o CMS-u, ne o
+ * sadržaju, i nemaju šta da traže u odgovoru.
+ */
+const FEATURED_IMAGE_PROJECTION = `
+  "featuredImage": featuredImage{
+    alt,
+    caption,
+    credit,
+    crop,
+    hotspot,
+    asset->{
+      _id,
+      "dimensions": metadata.dimensions{ width, height }
+    }
+  }
+`;
+
 /** Projekcija koja se koristi svuda gde se članak prikazuje. */
 const ARTICLE_PROJECTION = `
   _id,
@@ -38,6 +61,7 @@ const ARTICLE_PROJECTION = `
   excerpt,
   contentFormat,
   editorialTier,
+  ${FEATURED_IMAGE_PROJECTION},
   body,
   reviewDate,
   nextReviewDate,

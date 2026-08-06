@@ -130,6 +130,7 @@ export type Article = {
   excerpt?: string;
   cluster?: ClusterReference;
   contentFormat?: "article" | "pillar";
+  featuredImage?: ImageWithCaption;
   body?: PortableText;
   author?: AuthorReference;
   reviewedBy?: MedicalReviewerReference;
@@ -349,7 +350,7 @@ export type ArticlesByClusterQueryResult = Array<{
 
 // Source: src/sanity/queries/articles.ts
 // Variable: articleBySlugQuery
-// Query: *[  _type == "article"  && !(_id in path("drafts.**"))  && defined(author)  && defined(reviewedBy)  && defined(reviewDate)  && count(references) > 0    && slug.current == $slug    && cluster->slug.current == $cluster][0] {        _id,  title,  "slug": slug.current,  excerpt,  contentFormat,  editorialTier,  body,  reviewDate,  nextReviewDate,  "cluster": cluster->{ title, "slug": slug.current },  "author": author->{ name, credentials, "slug": slug.current },  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },  references[]{ label, url, publisher, year },  seo    }
+// Query: *[  _type == "article"  && !(_id in path("drafts.**"))  && defined(author)  && defined(reviewedBy)  && defined(reviewDate)  && count(references) > 0    && slug.current == $slug    && cluster->slug.current == $cluster][0] {        _id,  title,  "slug": slug.current,  excerpt,  contentFormat,  editorialTier,    "featuredImage": featuredImage{    alt,    caption,    credit,    crop,    hotspot,    asset->{      _id,      "dimensions": metadata.dimensions{ width, height }    }  },  body,  reviewDate,  nextReviewDate,  "cluster": cluster->{ title, "slug": slug.current },  "author": author->{ name, credentials, "slug": slug.current },  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },  references[]{ label, url, publisher, year },  seo    }
 export type ArticleBySlugQueryResult = {
   _id: string;
   title: string | null;
@@ -357,6 +358,20 @@ export type ArticleBySlugQueryResult = {
   excerpt: string | null;
   contentFormat: "article" | "pillar" | null;
   editorialTier: "elevated" | "sensitive" | "standard" | null;
+  featuredImage: {
+    alt: string | null;
+    caption: string | null;
+    credit: string | null;
+    crop: SanityImageCrop | null;
+    hotspot: SanityImageHotspot | null;
+    asset: {
+      _id: string;
+      dimensions: {
+        width: number | null;
+        height: number | null;
+      } | null;
+    } | null;
+  } | null;
   body: PortableText | null;
   reviewDate: string | null;
   nextReviewDate: string | null;
@@ -386,7 +401,7 @@ export type ArticleBySlugQueryResult = {
 
 // Source: src/sanity/queries/articles.ts
 // Variable: articleBySlugOnlyQuery
-// Query: *[  _type == "article"  && !(_id in path("drafts.**"))  && defined(author)  && defined(reviewedBy)  && defined(reviewDate)  && count(references) > 0 && slug.current == $slug][0] {        _id,  title,  "slug": slug.current,  excerpt,  contentFormat,  editorialTier,  body,  reviewDate,  nextReviewDate,  "cluster": cluster->{ title, "slug": slug.current },  "author": author->{ name, credentials, "slug": slug.current },  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },  references[]{ label, url, publisher, year },  seo    }
+// Query: *[  _type == "article"  && !(_id in path("drafts.**"))  && defined(author)  && defined(reviewedBy)  && defined(reviewDate)  && count(references) > 0 && slug.current == $slug][0] {        _id,  title,  "slug": slug.current,  excerpt,  contentFormat,  editorialTier,    "featuredImage": featuredImage{    alt,    caption,    credit,    crop,    hotspot,    asset->{      _id,      "dimensions": metadata.dimensions{ width, height }    }  },  body,  reviewDate,  nextReviewDate,  "cluster": cluster->{ title, "slug": slug.current },  "author": author->{ name, credentials, "slug": slug.current },  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },  references[]{ label, url, publisher, year },  seo    }
 export type ArticleBySlugOnlyQueryResult = {
   _id: string;
   title: string | null;
@@ -394,6 +409,20 @@ export type ArticleBySlugOnlyQueryResult = {
   excerpt: string | null;
   contentFormat: "article" | "pillar" | null;
   editorialTier: "elevated" | "sensitive" | "standard" | null;
+  featuredImage: {
+    alt: string | null;
+    caption: string | null;
+    credit: string | null;
+    crop: SanityImageCrop | null;
+    hotspot: SanityImageHotspot | null;
+    asset: {
+      _id: string;
+      dimensions: {
+        width: number | null;
+        height: number | null;
+      } | null;
+    } | null;
+  } | null;
   body: PortableText | null;
   reviewDate: string | null;
   nextReviewDate: string | null;
@@ -463,8 +492,8 @@ import "@sanity/client";
 declare module "@sanity/client" {
   interface SanityQueries {
     '\n  *[\n  _type == "article"\n  && !(_id in path("drafts.**"))\n  && defined(author)\n  && defined(reviewedBy)\n  && defined(reviewDate)\n  && count(references) > 0\n && cluster->slug.current == $cluster]\n    | order(reviewDate desc) {\n      _id,\n      title,\n      "slug": slug.current,\n      excerpt,\n      reviewDate,\n      "cluster": cluster->{ title, "slug": slug.current }\n    }\n': ArticlesByClusterQueryResult;
-    '\n  *[\n  _type == "article"\n  && !(_id in path("drafts.**"))\n  && defined(author)\n  && defined(reviewedBy)\n  && defined(reviewDate)\n  && count(references) > 0\n\n    && slug.current == $slug\n    && cluster->slug.current == $cluster][0] {\n      \n  _id,\n  title,\n  "slug": slug.current,\n  excerpt,\n  contentFormat,\n  editorialTier,\n  body,\n  reviewDate,\n  nextReviewDate,\n  "cluster": cluster->{ title, "slug": slug.current },\n  "author": author->{ name, credentials, "slug": slug.current },\n  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },\n  references[]{ label, url, publisher, year },\n  seo\n\n    }\n': ArticleBySlugQueryResult;
-    '\n  *[\n  _type == "article"\n  && !(_id in path("drafts.**"))\n  && defined(author)\n  && defined(reviewedBy)\n  && defined(reviewDate)\n  && count(references) > 0\n && slug.current == $slug][0] {\n      \n  _id,\n  title,\n  "slug": slug.current,\n  excerpt,\n  contentFormat,\n  editorialTier,\n  body,\n  reviewDate,\n  nextReviewDate,\n  "cluster": cluster->{ title, "slug": slug.current },\n  "author": author->{ name, credentials, "slug": slug.current },\n  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },\n  references[]{ label, url, publisher, year },\n  seo\n\n    }\n': ArticleBySlugOnlyQueryResult;
+    '\n  *[\n  _type == "article"\n  && !(_id in path("drafts.**"))\n  && defined(author)\n  && defined(reviewedBy)\n  && defined(reviewDate)\n  && count(references) > 0\n\n    && slug.current == $slug\n    && cluster->slug.current == $cluster][0] {\n      \n  _id,\n  title,\n  "slug": slug.current,\n  excerpt,\n  contentFormat,\n  editorialTier,\n  \n  "featuredImage": featuredImage{\n    alt,\n    caption,\n    credit,\n    crop,\n    hotspot,\n    asset->{\n      _id,\n      "dimensions": metadata.dimensions{ width, height }\n    }\n  }\n,\n  body,\n  reviewDate,\n  nextReviewDate,\n  "cluster": cluster->{ title, "slug": slug.current },\n  "author": author->{ name, credentials, "slug": slug.current },\n  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },\n  references[]{ label, url, publisher, year },\n  seo\n\n    }\n': ArticleBySlugQueryResult;
+    '\n  *[\n  _type == "article"\n  && !(_id in path("drafts.**"))\n  && defined(author)\n  && defined(reviewedBy)\n  && defined(reviewDate)\n  && count(references) > 0\n && slug.current == $slug][0] {\n      \n  _id,\n  title,\n  "slug": slug.current,\n  excerpt,\n  contentFormat,\n  editorialTier,\n  \n  "featuredImage": featuredImage{\n    alt,\n    caption,\n    credit,\n    crop,\n    hotspot,\n    asset->{\n      _id,\n      "dimensions": metadata.dimensions{ width, height }\n    }\n  }\n,\n  body,\n  reviewDate,\n  nextReviewDate,\n  "cluster": cluster->{ title, "slug": slug.current },\n  "author": author->{ name, credentials, "slug": slug.current },\n  "reviewer": reviewedBy->{ name, credentials, specialty, institutionNote },\n  references[]{ label, url, publisher, year },\n  seo\n\n    }\n': ArticleBySlugOnlyQueryResult;
     '\n  *[\n  _type == "article"\n  && !(_id in path("drafts.**"))\n  && defined(author)\n  && defined(reviewedBy)\n  && defined(reviewDate)\n  && count(references) > 0\n] {\n    "slug": slug.current\n  }\n': PublishableArticlePathsQueryResult;
     '\n  *[\n  _type == "article"\n  && !(_id in path("drafts.**"))\n  && defined(author)\n  && defined(reviewedBy)\n  && defined(reviewDate)\n  && count(references) > 0\n] {\n    "slug": slug.current,\n    "cluster": cluster->slug.current\n  }\n': PublishableArticleSlugsQueryResult;
     '\n  *[_type == "cluster" && !(_id in path("drafts.**"))] | order(order asc, title asc) {\n    _id,\n    title,\n    "slug": slug.current,\n    intro,\n    order\n  }\n': AllClustersQueryResult;

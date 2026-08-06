@@ -73,6 +73,21 @@ export const article = defineType({
       },
       validation: (rule) => rule.required(),
     }),
+    /*
+     * Naslovna slika je OPCIONA i koristi ISTI `imageWithCaption` objekat kao
+     * slike u tekstu. Nije uveden drugi image model — dva paralelna modela bi
+     * značila dva mesta na kojima se pravilo o obaveznom opisu može razići.
+     *
+     * Stoji uz uvodne podatke i neposredno pre teksta, isto kao na stranici.
+     */
+    defineField({
+      name: "featuredImage",
+      title: "Naslovna slika",
+      type: "imageWithCaption",
+      group: "content",
+      description:
+        "Opciono. Ako je dodaš, važe ista pravila kao za slike u tekstu — opis (alt) je obavezan.",
+    }),
     defineField({
       name: "body",
       title: "Tekst",

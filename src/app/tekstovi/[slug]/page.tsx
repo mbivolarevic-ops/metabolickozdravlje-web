@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { Breadcrumbs } from "@/components/content/Breadcrumbs";
 import { ArticleBody } from "@/components/content/ArticleBody";
+import { ArticleImage } from "@/components/content/ArticleImage";
 import {
   MedicalDisclaimer,
   ReferenceList,
@@ -11,6 +12,11 @@ import {
   type ReferenceListItem,
 } from "@/components/medical";
 import { getArticle, loadArticleSlugs } from "@/sanity/content";
+import {
+  OPEN_GRAPH_IMAGE_HEIGHT,
+  OPEN_GRAPH_IMAGE_WIDTH,
+  toOpenGraphImageUrl,
+} from "@/sanity/imageUrl";
 
 /**
  * Stranica pojedinačnog članka (`/tekstovi/[slug]`).
@@ -26,6 +32,9 @@ import { getArticle, loadArticleSlugs } from "@/sanity/content";
  * Medicinska kapija: članak prolazi samo ako zadovolji `isDisplayableArticle()`
  * i proveru tela. Nedostajuća atribucija, neispravno telo ili neispravan medij
  * znače 404 — nikada delimičan prikaz.
+ *
+ * Naslovna slika je opciona. Kada je nema, stranica je potpuna i bez nje; kada
+ * postoji ali nije ispravna, članak uopšte ne prolazi kapiju.
  */
 
 export const dynamicParams = false;
@@ -54,10 +63,35 @@ export async function generateMetadata({
   // Neprikaziv članak ne ulazi u metadata.
   if (article === null) return {};
 
-  return {
+  const metadata: Metadata = {
     title: article.title,
     description: toMetaDescription(article.excerpt),
   };
+
+  /*
+   * Open Graph slika se postavlja SAMO kada postoji potpuno validna naslovna
+   * slika iz koje se može sastaviti adresa na Sanity CDN-u. Bez toga se ne
+   * izmišlja ništa — pogrešna ili prazna OG slika je gora od izostanka, jer
+   * je čitač linkova prikazuje kao da je deo teksta.
+   *
+   * Globalni `noindex` ostaje na snazi; ovo utiče samo na prikaz podeljenog
+   * linka, ne na indeksiranje.
+   */
+  const ogImage = toOpenGraphImageUrl(article.featuredImage);
+  if (ogImage !== null) {
+    metadata.openGraph = {
+      images: [
+        {
+          url: ogImage,
+          width: OPEN_GRAPH_IMAGE_WIDTH,
+          height: OPEN_GRAPH_IMAGE_HEIGHT,
+          alt: article.featuredImage?.alt ?? undefined,
+        },
+      ],
+    };
+  }
+
+  return metadata;
 }
 
 export default async function ArticlePage({
@@ -69,6 +103,9 @@ export default async function ArticlePage({
   const article = await getArticle(slug);
 
   if (article === null) notFound();
+
+  // Odsutna i `null` naslovna slika su isto stanje: nema slike.
+  const featuredImage = article.featuredImage ?? null;
 
   const references: ReferenceListItem[] = article.references.map((item) => ({
     label: item.label,
@@ -114,6 +151,16 @@ export default async function ArticlePage({
           reviewDate={article.reviewDate}
         />
       </div>
+
+      {/*
+       * Naslovna slika stoji posle atribucije i pre teksta. Ako je nema,
+       * `ArticleImage` ne renderuje ništa i stranica ostaje potpuna.
+       */}
+      {featuredImage !== null && (
+        <div className="max-w-[var(--container-prose)]">
+          <ArticleImage value={featuredImage} />
+        </div>
+      )}
 
       <article className="mt-8">
         <ArticleBody value={article.body} />

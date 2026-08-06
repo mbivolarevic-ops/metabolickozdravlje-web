@@ -1,16 +1,19 @@
 import Image from "next/image";
 import {
-  createImageUrlBuilder,
-  type SanityImageSource,
-} from "@sanity/image-url";
-import { readSanityConfig } from "@/sanity/env";
-import { isValidBodyImage } from "@/sanity/bodyGuards";
+  ARTICLE_IMAGE_HEIGHT,
+  ARTICLE_IMAGE_WIDTH,
+  toArticleImageUrl,
+} from "@/sanity/imageUrl";
 
 /**
- * Slika u telu članka.
+ * Slika u članku — u telu teksta i kao naslovna slika.
  *
- * Ceo Sanity image objekat se prosleđuje builderu, pa se `crop` i `hotspot`
- * poštuju — isečak koji je urednik izabrao ostaje isečak koji čitalac vidi.
+ * Jedna komponenta za oba mesta: naslovna slika koristi ISTI model
+ * (`imageWithCaption`) i ista pravila. Druga komponenta bi značila drugo
+ * mesto na kojem se pravilo o obaveznom opisu može razići.
+ *
+ * Isečak i fokus (`crop`, `hotspot`) se poštuju — isečak koji je urednik
+ * izabrao ostaje isečak koji čitalac vidi.
  *
  * Fail-closed: slika bez asseta ili bez `alt` opisa se NE renderuje. Slika
  * bez opisa je nedostupna, a prazan `alt` na medicinskom tekstu znači gubitak
@@ -18,55 +21,44 @@ import { isValidBodyImage } from "@/sanity/bodyGuards";
  */
 
 export interface ArticleImageValue {
-  asset?: { _ref?: string; _id?: string };
-  alt?: string;
-  caption?: string;
-  credit?: string;
+  asset?: { _ref?: string | null; _id?: string | null } | null;
+  alt?: string | null;
+  caption?: string | null;
+  credit?: string | null;
   crop?: unknown;
   hotspot?: unknown;
 }
 
-/** Fiksne dimenzije okvira — drže odnos stranica i sprečavaju skok rasporeda. */
-const RENDER_WIDTH = 1200;
-const RENDER_HEIGHT = 675;
+/** Vrednost postoji i nije prazna ni posle uklanjanja razmaka. */
+function hasText(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
 
 export function ArticleImage({ value }: { value: ArticleImageValue }) {
-  if (!isValidBodyImage(value)) return null;
+  const src = toArticleImageUrl(value);
 
-  const config = readSanityConfig();
-  const builder = createImageUrlBuilder({
-    projectId: config.projectId,
-    dataset: config.dataset,
-  });
-
-  const src = builder
-    .image(value as SanityImageSource)
-    .width(RENDER_WIDTH)
-    .height(RENDER_HEIGHT)
-    .fit("crop")
-    .auto("format")
-    .url();
+  // `null` znači da slika nije prošla proveru — ne prikazuje se ništa.
+  if (src === null) return null;
 
   const alt = value.alt ?? "";
-  const hasFooter =
-    (value.caption !== undefined && value.caption.length > 0) ||
-    (value.credit !== undefined && value.credit.length > 0);
+  const caption = hasText(value.caption) ? value.caption : null;
+  const credit = hasText(value.credit) ? value.credit : null;
 
   return (
     <figure className="my-8">
       <Image
         src={src}
         alt={alt}
-        width={RENDER_WIDTH}
-        height={RENDER_HEIGHT}
+        width={ARTICLE_IMAGE_WIDTH}
+        height={ARTICLE_IMAGE_HEIGHT}
         sizes="(max-width: 680px) 100vw, 680px"
         className="h-auto w-full rounded-md"
       />
-      {hasFooter && (
+      {(caption !== null || credit !== null) && (
         <figcaption className="mt-2 text-sm text-text-muted">
-          {value.caption}
-          {value.caption !== undefined && value.credit !== undefined && " · "}
-          {value.credit !== undefined && <span>Izvor: {value.credit}</span>}
+          {caption}
+          {caption !== null && credit !== null && " · "}
+          {credit !== null && <span>Izvor: {credit}</span>}
         </figcaption>
       )}
     </figure>

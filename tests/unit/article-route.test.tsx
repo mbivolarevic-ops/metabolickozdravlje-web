@@ -41,6 +41,7 @@ import ArticleNotFound from "@/app/tekstovi/[slug]/not-found";
 
 const ARTICLE = {
   _id: "article-1",
+  featuredImage: null,
   title: "Test članak",
   slug: "test-clanak",
   excerpt: "Ovo je sintetički opis za test.",
@@ -178,6 +179,106 @@ describe("medicinski obavezni elementi", () => {
   });
 });
 
+/**
+ * Naslovna slika je opciona. Članak bez nje mora izgledati potpuno ispravno;
+ * članak sa nevalidnom slikom uopšte ne stiže do prikaza (v. loader testove).
+ */
+const FEATURED_IMAGE = {
+  alt: "Sintetički opis naslovne slike",
+  caption: "Potpis naslovne slike.",
+  credit: "Sintetički izvor",
+  crop: { top: 0.1, bottom: 0.1, left: 0.2, right: 0.2 },
+  hotspot: { x: 0.5, y: 0.4, width: 0.5, height: 0.5 },
+  asset: {
+    _id: "image-abc1234567890abcdef1234567890abcdef1234-1600x900-jpg",
+    dimensions: { width: 1600, height: 900 },
+  },
+};
+
+describe("naslovna slika", () => {
+  it("članak bez naslovne slike se prikazuje potpuno, bez praznog okvira", async () => {
+    getArticle.mockResolvedValue(ARTICLE);
+    const { container } = render(await ArticlePage(params("test-clanak")));
+
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(container.querySelector("figure")).toBeNull();
+
+    // Sve ostalo je i dalje tu.
+    expect(container.querySelectorAll("h1")).toHaveLength(1);
+    expect(screen.getByText("Telo teksta.")).toBeVisible();
+    expect(screen.getByRole("region", { name: "Izvori" })).toBeVisible();
+  });
+
+  it("validna naslovna slika se prikazuje sa alt tekstom", async () => {
+    getArticle.mockResolvedValue({ ...ARTICLE, featuredImage: FEATURED_IMAGE });
+    render(await ArticlePage(params("test-clanak")));
+
+    expect(
+      screen.getByRole("img", { name: "Sintetički opis naslovne slike" }),
+    ).toBeVisible();
+  });
+
+  it("prikazuje potpis i izvor kada postoje", async () => {
+    getArticle.mockResolvedValue({ ...ARTICLE, featuredImage: FEATURED_IMAGE });
+    const { container } = render(await ArticlePage(params("test-clanak")));
+
+    const figure = container.querySelector("figure");
+    expect(figure).toHaveTextContent("Potpis naslovne slike.");
+    expect(figure).toHaveTextContent("Izvor: Sintetički izvor");
+  });
+
+  it("bez potpisa i izvora nema praznog reda ispod slike", async () => {
+    getArticle.mockResolvedValue({
+      ...ARTICLE,
+      featuredImage: { ...FEATURED_IMAGE, caption: null, credit: null },
+    });
+    const { container } = render(await ArticlePage(params("test-clanak")));
+
+    expect(container.querySelector("figcaption")).toBeNull();
+  });
+
+  it("prosleđuje crop i hotspot u adresu slike", async () => {
+    getArticle.mockResolvedValue({ ...ARTICLE, featuredImage: FEATURED_IMAGE });
+    render(await ArticlePage(params("test-clanak")));
+
+    const decoded = decodeURIComponent(
+      screen.getByRole("img").getAttribute("src") ?? "",
+    );
+
+    // Isečak koji je urednik izabrao mora stići do CDN-a kao `rect`.
+    expect(decoded).toContain("rect=");
+    expect(decoded).toContain("cdn.sanity.io/images/testprojekat1/staging/");
+  });
+
+  it("stoji posle atribucije, a pre teksta članka", async () => {
+    getArticle.mockResolvedValue({ ...ARTICLE, featuredImage: FEATURED_IMAGE });
+    const { container } = render(await ArticlePage(params("test-clanak")));
+
+    const figure = container.querySelector("figure");
+    const byline = screen.getByText("Test Recenzent");
+    const body = screen.getByText("Telo teksta.");
+
+    expect(figure).not.toBeNull();
+    expect(
+      byline.compareDocumentPosition(figure as Node) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      (figure as Node).compareDocumentPosition(body) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("okvir slike ima fiksne dimenzije, pa nema skoka rasporeda", async () => {
+    getArticle.mockResolvedValue({ ...ARTICLE, featuredImage: FEATURED_IMAGE });
+    render(await ArticlePage(params("test-clanak")));
+
+    const image = screen.getByRole("img");
+    expect(image).toHaveAttribute("width", "1200");
+    expect(image).toHaveAttribute("height", "675");
+  });
+});
+
 describe("povezanost sa temom", () => {
   it("putanja vodi na početnu i na pregled tema", async () => {
     getArticle.mockResolvedValue(ARTICLE);
@@ -254,11 +355,44 @@ describe("metadata", () => {
     expect(await generateMetadata(params("test-clanak"))).toEqual({});
   });
 
-  it("ne postavlja OG sliku — članak nema polje za nju", async () => {
+  it("bez naslovne slike ne izmišlja OG sliku", async () => {
     getArticle.mockResolvedValue(ARTICLE);
 
     const meta = await generateMetadata(params("test-clanak"));
     expect(meta.openGraph).toBeUndefined();
+  });
+
+  it("malformirana naslovna slika ne daje OG sliku", async () => {
+    // Do rute ovakav članak i ne stiže, ali metadata ne sme da improvizuje.
+    getArticle.mockResolvedValue({
+      ...ARTICLE,
+      featuredImage: { alt: "Opis bez asseta" },
+    });
+
+    const meta = await generateMetadata(params("test-clanak"));
+    expect(meta.openGraph).toBeUndefined();
+  });
+
+  it("validna naslovna slika daje OG sliku samo sa Sanity CDN-a", async () => {
+    getArticle.mockResolvedValue({ ...ARTICLE, featuredImage: FEATURED_IMAGE });
+
+    const meta = await generateMetadata(params("test-clanak"));
+    const image = meta.openGraph?.images;
+    expect(Array.isArray(image)).toBe(true);
+
+    const first = Array.isArray(image) ? image[0] : undefined;
+    const url =
+      typeof first === "object" && first !== null && "url" in first
+        ? String(first.url)
+        : "";
+
+    expect(url.startsWith("https://cdn.sanity.io/images/")).toBe(true);
+    expect(decodeURIComponent(url)).toContain("testprojekat1/staging/");
+    expect(first).toMatchObject({
+      width: 1200,
+      height: 630,
+      alt: "Sintetički opis naslovne slike",
+    });
   });
 });
 

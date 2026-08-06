@@ -893,6 +893,14 @@
         },
         "optional": true
       },
+      "featuredImage": {
+        "type": "objectAttribute",
+        "value": {
+          "type": "inline",
+          "name": "imageWithCaption"
+        },
+        "optional": true
+      },
       "body": {
         "type": "objectAttribute",
         "value": {

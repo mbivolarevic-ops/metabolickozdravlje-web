@@ -13,7 +13,7 @@ import {
   publishableArticlePathsQuery,
 } from "./queries/articles";
 import { isDisplayableArticle, type DisplayableArticle } from "./guards";
-import { isRenderableBody } from "./bodyGuards";
+import { isAcceptableFeaturedImage, isRenderableBody } from "./bodyGuards";
 
 /**
  * Serverski, read-only sloj za dohvat sadržaja tema.
@@ -138,6 +138,9 @@ export async function loadArticle(
 
   if (!isDisplayableArticle(result)) return null;
   if (!isRenderableBody(result.body)) return null;
+
+  // Naslovna slika sme da izostane; ako postoji, mora biti potpuna.
+  if (!isAcceptableFeaturedImage(result.featuredImage)) return null;
 
   return result;
 }

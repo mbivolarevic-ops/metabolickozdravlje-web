@@ -498,6 +498,52 @@ describe("Loader članka", () => {
     expect(await loadArticle("x", fetcherReturning(withBadVideo))).toBeNull();
   });
 
+  it("članak BEZ naslovne slike i dalje prolazi", async () => {
+    // Odsutno polje i eksplicitan `null` su isto stanje: nema slike.
+    expect(
+      (await loadArticle("x", fetcherReturning(VALID_ARTICLE)))?.slug,
+    ).toBe("test-clanak");
+    expect(
+      (
+        await loadArticle(
+          "x",
+          fetcherReturning({ ...VALID_ARTICLE, featuredImage: null }),
+        )
+      )?.slug,
+    ).toBe("test-clanak");
+  });
+
+  it("članak sa potpunom naslovnom slikom prolazi", async () => {
+    const article = await loadArticle(
+      "x",
+      fetcherReturning({
+        ...VALID_ARTICLE,
+        featuredImage: {
+          asset: { _id: "image-abc-1600x900-jpg" },
+          alt: "Sintetički opis naslovne slike",
+          caption: "Potpis.",
+          credit: "Sintetički izvor",
+        },
+      }),
+    );
+
+    expect(article?.slug).toBe("test-clanak");
+  });
+
+  it.each([
+    ["bez asseta", { alt: "Opis" }],
+    ["bez alt teksta", { asset: { _id: "image-abc-1600x900-jpg" }, alt: "" }],
+    ["prazan objekat", {}],
+    ["pogrešan tip", "image-abc"],
+  ])("malformirana naslovna slika (%s) obara članak", async (_l, featured) => {
+    expect(
+      await loadArticle(
+        "x",
+        fetcherReturning({ ...VALID_ARTICLE, featuredImage: featured }),
+      ),
+    ).toBeNull();
+  });
+
   it("članak sa nepoznatim blokom u telu se ne prikazuje", async () => {
     const withUnknownBlock = {
       ...VALID_ARTICLE,

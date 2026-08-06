@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  isAcceptableFeaturedImage,
   isRenderableBody,
   isSafeBodyHref,
   isValidBodyImage,
@@ -145,6 +146,52 @@ describe("isValidBodyImage", () => {
   it("odbija sliku bez asseta", () => {
     expect(isValidBodyImage({ alt: "Opis" })).toBe(false);
     expect(isValidBodyImage({ asset: {}, alt: "Opis" })).toBe(false);
+  });
+});
+
+describe("isAcceptableFeaturedImage", () => {
+  const FEATURED = {
+    asset: { _id: "image-abc-1600x900-jpg" },
+    alt: "Sintetički opis naslovne slike",
+  };
+
+  it("odsutna naslovna slika je dozvoljena", () => {
+    expect(isAcceptableFeaturedImage(undefined)).toBe(true);
+    expect(isAcceptableFeaturedImage(null)).toBe(true);
+  });
+
+  it("potpuna naslovna slika prolazi", () => {
+    expect(isAcceptableFeaturedImage(FEATURED)).toBe(true);
+    expect(
+      isAcceptableFeaturedImage({
+        ...FEATURED,
+        caption: "Potpis.",
+        credit: "Izvor",
+        crop: { top: 0.1, bottom: 0.1, left: 0, right: 0 },
+        hotspot: { x: 0.5, y: 0.5, width: 0.5, height: 0.5 },
+      }),
+    ).toBe(true);
+  });
+
+  it("prisutna slika bez asseta pada", () => {
+    expect(isAcceptableFeaturedImage({ alt: "Opis" })).toBe(false);
+    expect(isAcceptableFeaturedImage({ asset: {}, alt: "Opis" })).toBe(false);
+    expect(isAcceptableFeaturedImage({ asset: null, alt: "Opis" })).toBe(false);
+  });
+
+  it("prisutna slika bez alt teksta pada", () => {
+    expect(isAcceptableFeaturedImage({ ...FEATURED, alt: "" })).toBe(false);
+    expect(isAcceptableFeaturedImage({ ...FEATURED, alt: "   " })).toBe(false);
+    expect(isAcceptableFeaturedImage({ ...FEATURED, alt: undefined })).toBe(
+      false,
+    );
+  });
+
+  it("prisutna ali malformirana vrednost pada", () => {
+    // Prazan objekat, pogrešan tip, lista — ništa od toga nije „nema slike“.
+    for (const value of [{}, "image-abc", 42, [], true]) {
+      expect(isAcceptableFeaturedImage(value)).toBe(false);
+    }
   });
 });
 

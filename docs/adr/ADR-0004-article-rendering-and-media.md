@@ -100,10 +100,47 @@ predstavljati — saglasnost je zaseban posao i nije deo ovog PR-a.
 `VideoEmbed` je jedina klijentska komponenta na stranici članka, i to zbog
 jednog prekidača stanja. Sve ostalo su serverske komponente.
 
-### 6. Nema hero slike
+### 6. Naslovna slika: opciona, isti model
 
-Šema `article` nema polje za naslovnu sliku. Nije dodato — dodavanje polja u
-content model je zasebna uređivačka odluka, ne posledica rada na prikazu.
+Vlasnik je odobrio opciono polje `featuredImage` na `article` dokumentu.
+
+**Isti model, ne drugi.** Polje koristi postojeći `imageWithCaption` objekat.
+Nije uveden paralelan image model — dva modela bi značila dva mesta na kojima
+se pravilo o obaveznom opisu može razići, i pre ili kasnije bi se razišla.
+
+| Stanje | Ishod |
+|---|---|
+| polje odsutno ili `null` | dozvoljeno; stranica je potpuna i bez slike |
+| slika prisutna i potpuna | prikazuje se posle atribucije, pre teksta |
+| slika prisutna ali nevalidna | **fail-closed** — ceo članak daje 404 |
+
+Treći red je namerno strog i isti kao za slike u telu. Delimična naslovna
+slika bi značila prazan okvir na vrhu medicinskog teksta, ili sliku bez opisa
+— dakle sadržaj koji deo čitalaca ne može da koristi.
+
+**Zašto `crop` i `hotspot`.** Naslovna slika se prikazuje u fiksnom odnosu
+16:9, a Open Graph u 1,91:1. Bez isečka i fokusa, automatsko sečenje bi lako
+odseklo ono zbog čega je slika izabrana — kod grafikona ili nalaza to nije
+estetski problem nego gubitak informacije. Zato se builderu prosleđuje ceo
+objekat, a ne samo `asset._ref`.
+
+**Zašto je `alt` obavezan.** Ista pravila kao za slike u telu (`docs/01` §8.4,
+`docs/04` §14.7). Naslovna slika je često grafikon ili shema; bez opisa ta
+informacija ne postoji za čitaoca koji sliku ne vidi.
+
+**Open Graph.** Kada postoji potpuno validna naslovna slika, iz nje se sastavlja
+OG slika — isključivo adresa na Sanity CDN-u, sa fiksnim formatom. Kada slike
+nema ili nije validna, OG slika se **ne postavlja**; pogrešna OG slika je gora
+od izostanka, jer je čitač linkova prikazuje kao deo teksta. Globalni `noindex`
+ostaje na snazi.
+
+Adrese slika su na jednom mestu (`src/sanity/imageUrl.ts`), da prikaz i
+metapodaci ne bi mogli da se raziđu oko isečka.
+
+**Projekcija.** Povlači se tačno ono što treba: `alt`, `caption`, `credit`,
+`crop`, `hotspot`, identifikator asseta i dimenzije. Ostatak zapisa o fajlu
+(URL, paleta, naziv originala, podaci o otpremanju) se ne povlači — to su
+podaci o CMS-u, ne o sadržaju.
 
 ### 7. Statičko generisanje, bez ISR-a
 
@@ -131,6 +168,9 @@ Hostingeru ostavlja nepotvrđenim.
   vlasnika i izmenu na tri mesta (šema, `ALLOWED_CONTENT_BLOCK_TYPES`,
   `bodyGuards`).
 - Zavisnosti `@portabletext/react` i `@sanity/image-url` postaju produkcione.
+- Naslovna slika koja je uneta nepotpuno obara ceo članak. Za urednika to znači
+  da je bolje ne dodati sliku nego je dodati napola — što treba i reći, jer
+  nije očigledno.
 
 **Otvoreno**
 
@@ -149,3 +189,6 @@ Hostingeru ostavlja nepotvrđenim.
 | Proslediti adresu videa direktno iframe-u | CMS bi mogao da učita bilo koji sadržaj |
 | Ugraditi video bez transkripta | Sadržaj nedostupan bez zvuka; suprotno WCAG 2.1 AA |
 | Dozvoliti proizvoljne image hostove | Svaki host je novi kanal ka trećoj strani |
+| Zaseban model za naslovnu sliku | Dva image modela = dva mesta na kojima pravilo o obaveznom opisu može da se raziđe |
+| Naslovnu sliku preskočiti kad je nevalidna, a članak prikazati | Prazan okvir ili slika bez opisa na vrhu medicinskog teksta |
+| Postaviti OG sliku i kad slika nije potpuna | Čitač linkova je prikazuje kao deo teksta; pogrešna je gora od nijedne |
