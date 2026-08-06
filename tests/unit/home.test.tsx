@@ -159,10 +159,13 @@ describe("Početna stranica", () => {
     expect(container.querySelectorAll('[role="button"]')).toHaveLength(0);
   });
 
-  it("na početnoj nema nijednog linka (odredišta još ne postoje)", () => {
+  it("kartice tema na početnoj nisu linkovi", () => {
     const { container } = render(<HomePage />);
-    // Header link „/" i skip-link „#glavni-sadrzaj" žive u layout-u,
-    // pa sama stranica ne sme da doda nijedan link.
+    /*
+     * Ruta `/teme` sada postoji i vodi se iz zaglavlja, ali kartice na
+     * početnoj ostaju obične: to su PLANIRANE teme čiji CMS slug-ovi još
+     * nisu potvrđeni, pa bi link vodio na nagađanu adresu.
+     */
     expect(container.querySelectorAll("a[href]")).toHaveLength(0);
   });
 
