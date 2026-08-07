@@ -2,8 +2,10 @@ import { cache } from "react";
 import { getOptionalSanityClient } from "./client";
 import {
   isValidArticleSummary,
+  isValidHomepageArticle,
   isValidTopic,
   type ValidArticleSummary,
+  type ValidHomepageArticle,
   type ValidTopic,
 } from "./contentGuards";
 import { allClustersQuery, clusterBySlugQuery } from "./queries/clusters";
@@ -11,6 +13,7 @@ import {
   articleBySlugOnlyQuery,
   articlesByClusterQuery,
   publishableArticlePathsQuery,
+  recentlyReviewedArticlesQuery,
 } from "./queries/articles";
 import { isDisplayableArticle, type DisplayableArticle } from "./guards";
 import { isAcceptableFeaturedImage, isRenderableBody } from "./bodyGuards";
@@ -105,6 +108,30 @@ export async function loadTopicArticleSummaries(
 }
 
 /**
+ * Nedavno stručno provereni članci za početnu — najviše tri.
+ *
+ * Redosled dolazi iz upita (`reviewDate desc`) i ovde se NE menja: sortiranje
+ * na dva mesta znači da se pre ili kasnije raziđu.
+ *
+ * Broj se dodatno ograničava i ovde. Upit već uzima `[0...3]`, ali početna ne
+ * sme da naraste ako neko upit kasnije „popravi“.
+ */
+export const HOMEPAGE_ARTICLE_LIMIT = 3;
+
+export async function loadHomepageArticles(
+  fetcher?: SanityFetcher,
+): Promise<ValidHomepageArticle[]> {
+  const client = resolveFetcher(fetcher);
+  if (client === null) return [];
+
+  const result = await client.fetch<unknown>(recentlyReviewedArticlesQuery);
+
+  return expectArray(result, "nedavno provereni članci")
+    .filter(isValidHomepageArticle)
+    .slice(0, HOMEPAGE_ARTICLE_LIMIT);
+}
+
+/**
  * Jedan članak po sopstvenom slug-u, spreman za prikaz.
  *
  * Razlikuje TRI ishoda:
@@ -184,5 +211,11 @@ export const getTopicArticleSummaries = cache((slug: string) =>
   loadTopicArticleSummaries(slug),
 );
 export const getArticle = cache((slug: string) => loadArticle(slug));
+export const getHomepageArticles = cache(() => loadHomepageArticles());
 
-export type { ValidArticleSummary, ValidTopic, DisplayableArticle };
+export type {
+  ValidArticleSummary,
+  ValidHomepageArticle,
+  ValidTopic,
+  DisplayableArticle,
+};

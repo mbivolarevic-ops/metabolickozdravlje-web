@@ -1,7 +1,9 @@
 import type {
   AllClustersQueryResult,
   ArticlesByClusterQueryResult,
+  RecentlyReviewedArticlesQueryResult,
 } from "../../sanity.types";
+import { isAcceptableFeaturedImage } from "./bodyGuards";
 
 /**
  * Runtime provere za sadržaj koji se prikazuje na stranicama tema.
@@ -74,6 +76,14 @@ export function isValidTopic(value: unknown): value is ValidTopic {
   return true;
 }
 
+/**
+ * Sažetak članka za početnu — isto što i sažetak u listi, plus opciona
+ * naslovna slika za sličicu.
+ */
+export interface ValidHomepageArticle extends ValidArticleSummary {
+  featuredImage: RecentlyReviewedArticlesQueryResult[number]["featuredImage"];
+}
+
 export function isValidArticleSummary(
   value: unknown,
 ): value is ValidArticleSummary {
@@ -90,4 +100,33 @@ export function isValidArticleSummary(
   if (!hasText(cluster.title) || !hasText(cluster.slug)) return false;
 
   return true;
+}
+
+/**
+ * Članak koji sme na početnu.
+ *
+ * Uz sve što traži sažetak, naslovna slika mora biti prihvatljiva: odsutna
+ * je u redu, prisutna mora biti potpuna.
+ *
+ * Zašto neispravna slika izbacuje CEO članak, a ne samo sličicu: isti podatak
+ * na stranici članka obara prikaz i daje 404 (v. `loadArticle`). Kartica koja
+ * bi ostala vodila bi čitaoca u 404. Bolje je da je nema.
+ */
+export function isValidHomepageArticle(
+  value: unknown,
+): value is ValidHomepageArticle {
+  if (!isValidArticleSummary(value)) return false;
+
+  const record = value as { featuredImage?: unknown; hasUsableBody?: unknown };
+
+  /*
+   * Članak bez upotrebljivog teksta ne sme na početnu.
+   *
+   * Uslov objavljivosti u upitu traži atribuciju i izvore, ali ne i telo, pa
+   * takav članak prođe filter. Njegovu stranicu odbija `isDisplayableArticle()`
+   * i vraća 404 — kartica bi vodila u prazno.
+   */
+  if (record.hasUsableBody !== true) return false;
+
+  return isAcceptableFeaturedImage(record.featuredImage);
 }
