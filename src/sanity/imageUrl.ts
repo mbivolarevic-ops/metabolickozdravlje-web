@@ -26,6 +26,10 @@ export const ARTICLE_IMAGE_HEIGHT = 675;
 export const OPEN_GRAPH_IMAGE_WIDTH = 1200;
 export const OPEN_GRAPH_IMAGE_HEIGHT = 630;
 
+/** Sličica u kartici na listi — isti odnos 16:9, manja datoteka. */
+export const THUMBNAIL_IMAGE_WIDTH = 640;
+export const THUMBNAIL_IMAGE_HEIGHT = 360;
+
 function buildUrl(
   value: unknown,
   width: number,
@@ -54,6 +58,11 @@ function buildUrl(
 /** Adresa za prikaz u članku. `null` ako slika nije ispravna. */
 export function toArticleImageUrl(value: unknown): string | null {
   return buildUrl(value, ARTICLE_IMAGE_WIDTH, ARTICLE_IMAGE_HEIGHT, "auto");
+}
+
+/** Adresa sličice za karticu. `null` ako slika nije ispravna. */
+export function toThumbnailImageUrl(value: unknown): string | null {
+  return buildUrl(value, THUMBNAIL_IMAGE_WIDTH, THUMBNAIL_IMAGE_HEIGHT, "auto");
 }
 
 /** Adresa za Open Graph. `null` ako slika nije ispravna — tada se OG ne postavlja. */

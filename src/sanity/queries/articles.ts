@@ -85,6 +85,30 @@ export const articlesByClusterQuery = defineQuery(`
     }
 `);
 
+/**
+ * Nedavno stručno provereni članci — za početnu stranicu.
+ *
+ * Sortira se po `reviewDate`, a ne po datumu objavljivanja: model taj datum
+ * nema, i to nije propust. Ono što čitaocu nešto znači jeste kada je tekst
+ * poslednji put stručno proveren, pa se po tome i ređa (docs/00 §5.2).
+ * Zato sekcija na početnoj i ne kaže „najnovije“.
+ *
+ * Projekcija je sažetak iz liste plus naslovna slika za sličicu. Telo,
+ * izvori, biografije i SEO se NE povlače — početnoj ne trebaju, a svaki
+ * suvišan podatak je podatak koji negde može da procuri.
+ */
+export const recentlyReviewedArticlesQuery = defineQuery(`
+  *[${PUBLISHABLE}] | order(reviewDate desc)[0...3] {
+    _id,
+    title,
+    "slug": slug.current,
+    excerpt,
+    reviewDate,
+    "cluster": cluster->{ title, "slug": slug.current },
+    ${FEATURED_IMAGE_PROJECTION}
+  }
+`);
+
 /** Jedan članak, po slug-u teme i slug-u članka. */
 export const articleBySlugQuery = defineQuery(`
   *[${PUBLISHABLE}
