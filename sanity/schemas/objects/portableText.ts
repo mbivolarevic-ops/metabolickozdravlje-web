@@ -26,6 +26,7 @@ export const portableText = defineType({
         { title: "Pasus", value: "normal" },
         { title: "Podnaslov (H2)", value: "h2" },
         { title: "Podnaslov (H3)", value: "h3" },
+        { title: "Citat", value: "blockquote" },
       ],
       lists: [
         { title: "Lista", value: "bullet" },
@@ -36,8 +37,36 @@ export const portableText = defineType({
           { title: "Podebljano", value: "strong" },
           { title: "Kurziv", value: "em" },
         ],
+        annotations: [
+          {
+            name: "link",
+            title: "Veza",
+            type: "object",
+            fields: [
+              {
+                name: "href",
+                title: "Adresa",
+                type: "string",
+                description:
+                  "Puna adresa (https://…) ili interna putanja koja počinje sa „/“.",
+                validation: (rule) =>
+                  rule
+                    .required()
+                    .custom((value) =>
+                      typeof value === "string" &&
+                      (value.startsWith("/") ||
+                        value.startsWith("https://") ||
+                        value.startsWith("http://"))
+                        ? true
+                        : "Dozvoljene su samo https/http adrese i interne putanje koje počinju sa „/“.",
+                    ),
+              },
+            ],
+          },
+        ],
       },
     }),
     defineArrayMember({ type: "imageWithCaption" }),
+    defineArrayMember({ type: "videoEmbed" }),
   ],
 });

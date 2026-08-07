@@ -31,5 +31,12 @@ export const imageWithCaption = defineType({
       title: "Potpis ispod slike",
       type: "string",
     }),
+    defineField({
+      name: "credit",
+      title: "Izvor ili autor slike",
+      type: "string",
+      description:
+        "Ko je autor ili odakle slika dolazi. Prikazuje se uz potpis.",
+    }),
   ],
 });

@@ -7,7 +7,13 @@ import {
   type ValidTopic,
 } from "./contentGuards";
 import { allClustersQuery, clusterBySlugQuery } from "./queries/clusters";
-import { articlesByClusterQuery } from "./queries/articles";
+import {
+  articleBySlugOnlyQuery,
+  articlesByClusterQuery,
+  publishableArticlePathsQuery,
+} from "./queries/articles";
+import { isDisplayableArticle, type DisplayableArticle } from "./guards";
+import { isAcceptableFeaturedImage, isRenderableBody } from "./bodyGuards";
 
 /**
  * Serverski, read-only sloj za dohvat sadržaja tema.
@@ -98,6 +104,65 @@ export async function loadTopicArticleSummaries(
   );
 }
 
+/**
+ * Jedan članak po sopstvenom slug-u, spreman za prikaz.
+ *
+ * Razlikuje TRI ishoda:
+ *  - `null` — članak ne postoji ili nije prikaziv (nedostaje atribucija,
+ *    telo nije upotrebljivo, medij je neispravan). Ruta na to daje 404.
+ *  - GREŠKA — odgovor je pogrešnog OBLIKA (niz, string, broj). To znači
+ *    prekršen ugovor upita i ne sme izgledati kao „nema članka“.
+ *  - članak — prošao je i `isDisplayableArticle()` i proveru tela.
+ *
+ * `isDisplayableArticle()` se ne zaobilazi ni ne razvodnjava; provera tela je
+ * dodatna, jer ta funkcija ne zna za blokove medija.
+ */
+export async function loadArticle(
+  slug: string,
+  fetcher?: SanityFetcher,
+): Promise<DisplayableArticle | null> {
+  const client = resolveFetcher(fetcher);
+  if (client === null) return null;
+
+  const result = await client.fetch<unknown>(articleBySlugOnlyQuery, { slug });
+
+  // Nema članka — legitiman ishod.
+  if (result === null || result === undefined) return null;
+
+  if (typeof result !== "object" || Array.isArray(result)) {
+    throw new Error(
+      "Sanity upit „članak po adresi“ nije vratio dokument. Odgovor je pogrešnog " +
+        "oblika, što znači prekršen ugovor upita — a ne da članak ne postoji.",
+    );
+  }
+
+  if (!isDisplayableArticle(result)) return null;
+  if (!isRenderableBody(result.body)) return null;
+
+  // Naslovna slika sme da izostane; ako postoji, mora biti potpuna.
+  if (!isAcceptableFeaturedImage(result.featuredImage)) return null;
+
+  return result;
+}
+
+/** Slug vrednosti objavljivih članaka — za `generateStaticParams`. */
+export async function loadArticleSlugs(
+  fetcher?: SanityFetcher,
+): Promise<string[]> {
+  const client = resolveFetcher(fetcher);
+  if (client === null) return [];
+
+  const result = await client.fetch<unknown>(publishableArticlePathsQuery);
+
+  return expectArray(result, "adrese objavljivih članaka")
+    .map((entry) =>
+      typeof entry === "object" && entry !== null && "slug" in entry
+        ? (entry as { slug?: unknown }).slug
+        : undefined,
+    )
+    .filter((slug): slug is string => typeof slug === "string" && slug !== "");
+}
+
 /** Slug vrednosti validnih tema — za `generateStaticParams`. */
 export async function loadTopicSlugs(
   fetcher?: SanityFetcher,
@@ -118,5 +183,6 @@ export const getTopic = cache((slug: string) => loadTopic(slug));
 export const getTopicArticleSummaries = cache((slug: string) =>
   loadTopicArticleSummaries(slug),
 );
+export const getArticle = cache((slug: string) => loadArticle(slug));
 
-export type { ValidArticleSummary, ValidTopic };
+export type { ValidArticleSummary, ValidTopic, DisplayableArticle };

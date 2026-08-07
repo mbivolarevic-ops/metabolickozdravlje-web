@@ -87,15 +87,21 @@ export default async function TopicPage({
 
             return (
               /*
-               * Sažeci NISU linkovi: ruta `/teme/[cluster]/[slug]` još ne
-               * postoji, a projekat ne pravi mrtve linkove. Kartica zato
-               * nema ni hover ni pokazivač koji bi tvrdio da je klikabilna.
+               * Link nosi naslov, ne cela kartica: jedno jasno odredište po
+               * stavci umesto velike klikabilne površine bez imena.
+               *
+               * Sažetak dolazi iz istog filtera objavljivosti kao i sama
+               * ruta `/tekstovi/[slug]`, pa link ne vodi u 404.
                */
               <li
                 key={article._id}
                 className="rounded-md border border-border bg-surface p-5"
               >
-                <h3 className="text-base font-semibold">{article.title}</h3>
+                <h3 className="text-base font-semibold">
+                  <Link href={`/tekstovi/${article.slug}`}>
+                    {article.title}
+                  </Link>
+                </h3>
                 <p className="mt-2 text-text-muted">{article.excerpt}</p>
                 {reviewedOn !== null && (
                   <p className="mt-2 text-sm text-text-muted">
