@@ -53,6 +53,28 @@ const FEATURED_IMAGE_PROJECTION = `
   }
 `;
 
+/**
+ * Da li članak ima telo koje se stvarno može pročitati.
+ *
+ * Uslov objavljivosti iznad NE traži telo — traži atribuciju i izvore. Članak
+ * bez teksta zato prolazi filter, ali ga `isDisplayableArticle()` odbija, pa
+ * njegova stranica daje 404. Lista koja bi ga prikazala vodila bi čitaoca u
+ * prazno.
+ *
+ * `coalesce(..., false)` je nužan: `count()` nad odsutnim poljem vraća `null`,
+ * a `null > 0` je opet `null`, ne `false`.
+ *
+ * Ovo je približna provera, namerno ista po duhu kao `hasUsableBody()`: bar
+ * jedan tekstualni blok sa bar jednim nepraznim spanom. Konačnu reč i dalje
+ * ima runtime guard.
+ */
+const HAS_USABLE_BODY_PROJECTION = `
+  "hasUsableBody": coalesce(
+    count(body[_type == "block" && count(children[defined(text) && text != ""]) > 0]) > 0,
+    false
+  )
+`;
+
 /** Projekcija koja se koristi svuda gde se članak prikazuje. */
 const ARTICLE_PROJECTION = `
   _id,
@@ -98,14 +120,15 @@ export const articlesByClusterQuery = defineQuery(`
  * suvišan podatak je podatak koji negde može da procuri.
  */
 export const recentlyReviewedArticlesQuery = defineQuery(`
-  *[${PUBLISHABLE}] | order(reviewDate desc)[0...3] {
+  *[${PUBLISHABLE}] | order(reviewDate desc)[0...4] {
     _id,
     title,
     "slug": slug.current,
     excerpt,
     reviewDate,
     "cluster": cluster->{ title, "slug": slug.current },
-    ${FEATURED_IMAGE_PROJECTION}
+    ${FEATURED_IMAGE_PROJECTION},
+    ${HAS_USABLE_BODY_PROJECTION}
   }
 `);
 

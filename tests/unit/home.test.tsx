@@ -119,6 +119,7 @@ const ARTICLE = {
   reviewDate: "2026-08-05",
   cluster: { title: "Test tema", slug: "test-tema" },
   featuredImage: null,
+  hasUsableBody: true,
 };
 
 function topics(count: number) {

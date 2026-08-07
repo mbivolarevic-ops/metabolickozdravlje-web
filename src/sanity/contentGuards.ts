@@ -117,7 +117,16 @@ export function isValidHomepageArticle(
 ): value is ValidHomepageArticle {
   if (!isValidArticleSummary(value)) return false;
 
-  return isAcceptableFeaturedImage(
-    (value as { featuredImage?: unknown }).featuredImage,
-  );
+  const record = value as { featuredImage?: unknown; hasUsableBody?: unknown };
+
+  /*
+   * Članak bez upotrebljivog teksta ne sme na početnu.
+   *
+   * Uslov objavljivosti u upitu traži atribuciju i izvore, ali ne i telo, pa
+   * takav članak prođe filter. Njegovu stranicu odbija `isDisplayableArticle()`
+   * i vraća 404 — kartica bi vodila u prazno.
+   */
+  if (record.hasUsableBody !== true) return false;
+
+  return isAcceptableFeaturedImage(record.featuredImage);
 }

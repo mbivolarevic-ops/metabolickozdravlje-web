@@ -629,6 +629,7 @@ const HOMEPAGE_ARTICLE = {
   reviewDate: "2026-08-05",
   cluster: { title: "Test tema", slug: "test-tema" },
   featuredImage: null,
+  hasUsableBody: true,
 };
 
 const HOMEPAGE_IMAGE = {
@@ -661,6 +662,21 @@ describe("isValidHomepageArticle", () => {
     expect(
       isValidHomepageArticle({ ...HOMEPAGE_ARTICLE, featuredImage: featured }),
     ).toBe(false);
+  });
+
+  /*
+   * Regresija, nađena sintetičkim QA-om: uslov objavljivosti u upitu ne traži
+   * telo, pa članak bez teksta prođe filter. `isDisplayableArticle()` ga
+   * odbija, njegova stranica daje 404 — a kartica na početnoj je vodila tamo.
+   */
+  it.each([
+    ["bez tela", false],
+    ["telo nepoznatog oblika", undefined],
+    ["telo prazno", null],
+  ])("odbija članak %s — kartica bi vodila u 404", (_l, hasUsableBody) => {
+    expect(isValidHomepageArticle({ ...HOMEPAGE_ARTICLE, hasUsableBody })).toBe(
+      false,
+    );
   });
 
   it("odbija članak koji ne bi prošao ni kao sažetak", () => {
@@ -714,12 +730,27 @@ describe("loadHomepageArticles", () => {
           _id: "a4",
           featuredImage: { alt: "Bez asseta" },
         },
+        { ...HOMEPAGE_ARTICLE, _id: "a5", hasUsableBody: false },
         "nije objekat",
       ]),
     );
 
     expect(articles).toHaveLength(1);
     expect(articles[0]?._id).toBe("article-1");
+  });
+
+  it("popunjava do tri tek posle filtriranja, ne pre njega", async () => {
+    // Upit uzima jedan zapis više, da odbačen članak ne ostavi rupu u listi.
+    const articles = await loadHomepageArticles(
+      fetcherReturning([
+        { ...HOMEPAGE_ARTICLE, _id: "a1", slug: "a1" },
+        { ...HOMEPAGE_ARTICLE, _id: "a2", slug: "a2", hasUsableBody: false },
+        { ...HOMEPAGE_ARTICLE, _id: "a3", slug: "a3" },
+        { ...HOMEPAGE_ARTICLE, _id: "a4", slug: "a4" },
+      ]),
+    );
+
+    expect(articles.map((a) => a.slug)).toEqual(["a1", "a3", "a4"]);
   });
 
   it("prava prazna lista ostaje prazna lista", async () => {
