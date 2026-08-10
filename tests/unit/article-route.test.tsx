@@ -396,11 +396,19 @@ describe("metadata", () => {
     expect(await generateMetadata(params("test-clanak"))).toEqual({});
   });
 
+  /*
+   * Članak od tada ima Open Graph blok (tip, naslov, adresa) — to je uvedeno
+   * uz kanonske adrese. Garancija je ostala ista i proverava se tamo gde sada
+   * živi: SLIKA se ne izmišlja.
+   */
   it("bez naslovne slike ne izmišlja OG sliku", async () => {
     getArticle.mockResolvedValue(ARTICLE);
 
     const meta = await generateMetadata(params("test-clanak"));
-    expect(meta.openGraph).toBeUndefined();
+    const og = meta.openGraph as Record<string, unknown>;
+
+    expect(og.type).toBe("article");
+    expect(og.images).toBeUndefined();
   });
 
   it("malformirana naslovna slika ne daje OG sliku", async () => {
@@ -411,7 +419,7 @@ describe("metadata", () => {
     });
 
     const meta = await generateMetadata(params("test-clanak"));
-    expect(meta.openGraph).toBeUndefined();
+    expect((meta.openGraph as Record<string, unknown>).images).toBeUndefined();
   });
 
   it("validna naslovna slika daje OG sliku samo sa Sanity CDN-a", async () => {

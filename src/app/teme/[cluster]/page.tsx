@@ -8,6 +8,9 @@ import {
   loadTopicSlugs,
 } from "@/sanity/content";
 import { formatReviewDate } from "@/components/medical/formatReviewDate";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { canonicalUrl } from "@/site/config";
+import { breadcrumbJsonLd } from "@/site/jsonLd";
 
 /**
  * Stranica jedne teme (`/teme/[cluster]`).
@@ -45,12 +48,27 @@ export async function generateMetadata({
   const { cluster } = await params;
   const topic = await getTopic(cluster);
 
-  // Nevalidan CMS zapis ne ulazi u metadata.
+  /*
+   * Nevalidan ili nepostojeći CMS zapis ne ulazi u metadata.
+   *
+   * Prazan objekat NIJE 404 — stranica sama odlučuje o tome, i to istim
+   * pozivom (`getTopic` je keširan, pa se upit izvršava jednom). Metadata ne
+   * sme ni da izazove 404 ni da ga spreči; ona samo ne tvrdi ništa.
+   */
   if (topic === null) return {};
+
+  const url = canonicalUrl("teme", topic.slug);
 
   return {
     title: topic.title,
     description: toMetaDescription(topic.intro),
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      title: topic.title,
+      description: toMetaDescription(topic.intro),
+      url,
+    },
   };
 }
 
@@ -68,6 +86,14 @@ export default async function TopicPage({
 
   return (
     <Container className="py-12">
+      {/* Strukturirani podaci nastaju tek posle kapije — nevalidna tema nema JSON-LD. */}
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Početna", url: canonicalUrl() },
+          { name: "Teme", url: canonicalUrl("teme") },
+          { name: topic.title, url: canonicalUrl("teme", topic.slug) },
+        ])}
+      />
       <p className="text-sm text-text-muted">
         <Link href="/teme">Teme</Link>
       </p>

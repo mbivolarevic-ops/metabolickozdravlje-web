@@ -11,7 +11,10 @@ import {
   ReviewerByline,
   type ReferenceListItem,
 } from "@/components/medical";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { getArticle, loadArticleSlugs } from "@/sanity/content";
+import { canonicalUrl } from "@/site/config";
+import { breadcrumbJsonLd, medicalWebPageJsonLd } from "@/site/jsonLd";
 import {
   OPEN_GRAPH_IMAGE_HEIGHT,
   OPEN_GRAPH_IMAGE_WIDTH,
@@ -60,12 +63,27 @@ export async function generateMetadata({
   const { slug } = await params;
   const article = await getArticle(slug);
 
-  // Neprikaziv članak ne ulazi u metadata.
+  /*
+   * Neprikaziv članak ne ulazi u metadata.
+   *
+   * `getArticle` je keširan i isti poziv koristi i sama stranica, pa nema
+   * drugog upita. Kriterijum prikazivosti je time DOSLOVNO isti kao na
+   * stranici — metadata ne može da bude blaža od kapije.
+   */
   if (article === null) return {};
+
+  const url = canonicalUrl("tekstovi", article.slug);
 
   const metadata: Metadata = {
     title: article.title,
     description: toMetaDescription(article.excerpt),
+    alternates: { canonical: url },
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description: toMetaDescription(article.excerpt),
+      url,
+    },
   };
 
   /*
@@ -78,17 +96,15 @@ export async function generateMetadata({
    * linka, ne na indeksiranje.
    */
   const ogImage = toOpenGraphImageUrl(article.featuredImage);
-  if (ogImage !== null) {
-    metadata.openGraph = {
-      images: [
-        {
-          url: ogImage,
-          width: OPEN_GRAPH_IMAGE_WIDTH,
-          height: OPEN_GRAPH_IMAGE_HEIGHT,
-          alt: article.featuredImage?.alt ?? undefined,
-        },
-      ],
-    };
+  if (ogImage !== null && metadata.openGraph != null) {
+    metadata.openGraph.images = [
+      {
+        url: ogImage,
+        width: OPEN_GRAPH_IMAGE_WIDTH,
+        height: OPEN_GRAPH_IMAGE_HEIGHT,
+        alt: article.featuredImage?.alt ?? undefined,
+      },
+    ];
   }
 
   return metadata;
@@ -114,8 +130,41 @@ export default async function ArticlePage({
     year: item.year,
   }));
 
+  /*
+   * Strukturirani podaci nastaju TEK POSLE kapije. Članak koji ne prolazi
+   * `getArticle` nema stranicu, pa ne sme imati ni JSON-LD — inače bi opis
+   * postojao za sadržaj koji se nikome ne prikazuje.
+   *
+   * Slika ide u JSON-LD samo kroz istu funkciju koja je propušta i u Open
+   * Graph; nevalidna slika daje `null` i polje se izostavlja.
+   */
+  const structuredData = [
+    medicalWebPageJsonLd({
+      title: article.title,
+      description: article.excerpt,
+      url: canonicalUrl("tekstovi", article.slug),
+      authorName: article.author.name,
+      reviewerName: article.reviewer.name,
+      reviewDate: article.reviewDate,
+      imageUrl: toOpenGraphImageUrl(featuredImage),
+    }),
+    breadcrumbJsonLd([
+      { name: "Početna", url: canonicalUrl() },
+      { name: "Teme", url: canonicalUrl("teme") },
+      {
+        name: article.cluster.title,
+        url: canonicalUrl("teme", article.cluster.slug),
+      },
+      { name: article.title, url: canonicalUrl("tekstovi", article.slug) },
+    ]),
+  ];
+
   return (
     <Container className="py-12">
+      {structuredData.map((data, index) => (
+        <JsonLd key={index} data={data} />
+      ))}
+
       <Breadcrumbs
         items={[
           { label: "Početna", href: "/" },
