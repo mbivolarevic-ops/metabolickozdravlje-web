@@ -14,6 +14,7 @@ import {
   articlesByClusterQuery,
   publishableArticlePathsQuery,
   recentlyReviewedArticlesQuery,
+  sitemapArticlesQuery,
 } from "./queries/articles";
 import { isDisplayableArticle, type DisplayableArticle } from "./guards";
 import { isAcceptableFeaturedImage, isRenderableBody } from "./bodyGuards";
@@ -129,6 +130,64 @@ export async function loadHomepageArticles(
   return expectArray(result, "nedavno provereni članci")
     .filter(isValidHomepageArticle)
     .slice(0, HOMEPAGE_ARTICLE_LIMIT);
+}
+
+/**
+ * Adresa i datum poslednje izmene — sve što sitemap-u treba.
+ *
+ * `lastModified` je `null` kada CMS podatak nije upotrebljiv. Datum se tada
+ * izostavlja iz sitemap-a; datum builda NIJE datum sadržaja i ne izmišlja se.
+ */
+export interface SitemapEntry {
+  slug: string;
+  lastModified: string | null;
+}
+
+/** Prihvata samo ISO datum koji se stvarno može parsirati. */
+function toLastModified(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : value;
+}
+
+/**
+ * Članci za sitemap.
+ *
+ * Filtrira ISTIM guardom koji odlučuje sme li članak na listu koja vodi na
+ * njegovu stranicu (`isValidHomepageArticle`). Time sitemap ne može da sadrži
+ * adresu koja vraća 404 — a to je jedina stvar koja sitemap čini štetnim.
+ */
+export async function loadSitemapArticles(
+  fetcher?: SanityFetcher,
+): Promise<SitemapEntry[]> {
+  const client = resolveFetcher(fetcher);
+  if (client === null) return [];
+
+  const result = await client.fetch<unknown>(sitemapArticlesQuery);
+
+  return expectArray(result, "članci za sitemap")
+    .filter(isValidHomepageArticle)
+    .map((article) => ({
+      slug: article.slug,
+      lastModified: toLastModified(
+        (article as { _updatedAt?: unknown })._updatedAt,
+      ),
+    }));
+}
+
+/** Teme za sitemap — iz istog validiranog izvora kao i stranica `/teme`. */
+export async function loadSitemapTopics(
+  fetcher?: SanityFetcher,
+): Promise<SitemapEntry[]> {
+  const topics = await loadTopics(fetcher);
+
+  return topics.map((topic) => ({
+    slug: topic.slug,
+    lastModified: toLastModified(
+      (topic as { _updatedAt?: unknown })._updatedAt,
+    ),
+  }));
 }
 
 /**

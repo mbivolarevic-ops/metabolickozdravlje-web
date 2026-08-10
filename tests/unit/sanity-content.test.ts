@@ -3,6 +3,8 @@ import {
   loadArticle,
   loadArticleSlugs,
   loadHomepageArticles,
+  loadSitemapArticles,
+  loadSitemapTopics,
   loadTopic,
   loadTopicArticleSummaries,
   loadTopicSlugs,
@@ -855,5 +857,114 @@ describe("loadHomepageArticles", () => {
     setEnv(undefined, undefined);
     const content = await import("@/sanity/content");
     expect(await content.loadHomepageArticles()).toEqual([]);
+  });
+});
+
+/**
+ * Podaci za sitemap.
+ *
+ * Sitemap koji sadrži adresu koja vraća 404 je gori od sitemap-a koji je nema,
+ * pa se ovde koristi isti guard koji odlučuje sme li članak na listu.
+ */
+describe("loadSitemapArticles", () => {
+  const SITEMAP_ARTICLE = {
+    ...HOMEPAGE_ARTICLE,
+    _updatedAt: "2026-08-06T10:00:00Z",
+  };
+
+  it("vraća adresu i datum poslednje izmene", async () => {
+    const entries = await loadSitemapArticles(
+      fetcherReturning([SITEMAP_ARTICLE]),
+    );
+
+    expect(entries).toEqual([
+      { slug: "test-clanak", lastModified: "2026-08-06T10:00:00Z" },
+    ]);
+  });
+
+  it.each([
+    ["bez tela", { hasUsableBody: false }],
+    ["bez sažetka", { excerpt: "" }],
+    ["nemoguć datum provere", { reviewDate: "2026-02-31" }],
+    ["bez teme", { cluster: null }],
+    ["malformirana naslovna slika", { featuredImage: { alt: "Bez asseta" } }],
+  ])("odbija članak %s", async (_label, override) => {
+    const entries = await loadSitemapArticles(
+      fetcherReturning([{ ...SITEMAP_ARTICLE, ...override }]),
+    );
+    expect(entries).toEqual([]);
+  });
+
+  it("izostavlja datum kada nije upotrebljiv, umesto da ga izmisli", async () => {
+    for (const bad of [undefined, null, "", "juče", 12345]) {
+      const entries = await loadSitemapArticles(
+        fetcherReturning([{ ...SITEMAP_ARTICLE, _updatedAt: bad }]),
+      );
+      expect(entries[0]?.lastModified).toBeNull();
+    }
+  });
+
+  it("prava prazna lista ostaje prazna", async () => {
+    await expect(loadSitemapArticles(fetcherReturning([]))).resolves.toEqual(
+      [],
+    );
+  });
+
+  it.each([
+    ["null", null],
+    ["objekat", { nije: "niz" }],
+    ["string", "nije niz"],
+  ])("malformiran odgovor (%s) baca", async (_label, value) => {
+    await expect(loadSitemapArticles(fetcherReturning(value))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it("bez konfiguracije vraća praznu listu", async () => {
+    setEnv(undefined, undefined);
+    const content = await import("@/sanity/content");
+    expect(await content.loadSitemapArticles()).toEqual([]);
+  });
+});
+
+describe("loadSitemapTopics", () => {
+  const SITEMAP_TOPIC = { ...VALID_TOPIC, _updatedAt: "2026-08-05T09:00:00Z" };
+
+  it("vraća adresu i datum poslednje izmene", async () => {
+    const entries = await loadSitemapTopics(fetcherReturning([SITEMAP_TOPIC]));
+
+    expect(entries).toEqual([
+      { slug: "test-tema", lastModified: "2026-08-05T09:00:00Z" },
+    ]);
+  });
+
+  it("koristi isti filter kao stranica `/teme`", async () => {
+    const entries = await loadSitemapTopics(
+      fetcherReturning([
+        SITEMAP_TOPIC,
+        { ...SITEMAP_TOPIC, _id: "t2", slug: "druga", intro: "" },
+      ]),
+    );
+
+    expect(entries.map((e) => e.slug)).toEqual(["test-tema"]);
+  });
+
+  it("izostavlja neupotrebljiv datum", async () => {
+    const entries = await loadSitemapTopics(
+      fetcherReturning([{ ...SITEMAP_TOPIC, _updatedAt: "nije datum" }]),
+    );
+    expect(entries[0]?.lastModified).toBeNull();
+  });
+
+  it("malformiran odgovor baca", async () => {
+    await expect(loadSitemapTopics(fetcherReturning(null))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it("bez konfiguracije vraća praznu listu", async () => {
+    setEnv(undefined, undefined);
+    const content = await import("@/sanity/content");
+    expect(await content.loadSitemapTopics()).toEqual([]);
   });
 });

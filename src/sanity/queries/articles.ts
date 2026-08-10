@@ -160,6 +160,30 @@ export const articleBySlugOnlyQuery = defineQuery(`
     }
 `);
 
+/**
+ * Članci za sitemap.
+ *
+ * Ista projekcija kao za početnu — dakle isti podaci koje traže postojeći
+ * guardovi — samo bez ograničenja broja i uz `_updatedAt`. Telo članka se NE
+ * povlači: sitemap-u treba adresa, ne tekst.
+ *
+ * Zašto ne `publishableArticlePathsQuery`: on vraća samo slug i ne zna ništa o
+ * telu, autoru ni slici, pa bi u sitemap ušle i adrese koje vraćaju 404.
+ */
+export const sitemapArticlesQuery = defineQuery(`
+  *[${PUBLISHABLE}] | order(reviewDate desc) {
+    _id,
+    _updatedAt,
+    title,
+    "slug": slug.current,
+    excerpt,
+    reviewDate,
+    "cluster": cluster->{ title, "slug": slug.current },
+    ${FEATURED_IMAGE_PROJECTION},
+    ${HAS_USABLE_BODY_PROJECTION}
+  }
+`);
+
 /** Slug vrednosti objavljivih članaka — za `generateStaticParams`. */
 export const publishableArticlePathsQuery = defineQuery(`
   *[${PUBLISHABLE}] {

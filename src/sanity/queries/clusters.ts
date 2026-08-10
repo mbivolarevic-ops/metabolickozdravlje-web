@@ -12,10 +12,17 @@ import { defineQuery } from "groq";
  * ili buduća promena perspektive ne bi propustili nedovršen tekst.
  */
 
-/** Sve teme, redosledom prioriteta iz projektne dokumentacije. */
+/**
+ * Sve teme, redosledom prioriteta iz projektne dokumentacije.
+ *
+ * `_updatedAt` je sistemski podatak koji Sanity održava sam; koristi ga
+ * sitemap kao datum poslednje izmene. Ne izmišlja se ništa — kada podatak
+ * nije upotrebljiv, datum se izostavlja.
+ */
 export const allClustersQuery = defineQuery(`
   *[_type == "cluster" && !(_id in path("drafts.**"))] | order(order asc, title asc) {
     _id,
+    _updatedAt,
     title,
     "slug": slug.current,
     intro,
