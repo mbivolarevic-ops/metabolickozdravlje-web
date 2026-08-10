@@ -99,6 +99,19 @@ export function isValidArticleSummary(
   if (!isRecord(cluster)) return false;
   if (!hasText(cluster.title) || !hasText(cluster.slug)) return false;
 
+  /*
+   * ⛔ Članak bez upotrebljivog teksta ne sme ni na jednu listu.
+   *
+   * Uslov objavljivosti u upitu traži atribuciju, datum provere i izvore — ali
+   * NE i telo. Takav članak prođe filter, a `isDisplayableArticle()` ga odbija,
+   * pa `/tekstovi/[slug]` vraća 404. Kartica bi vodila u prazno.
+   *
+   * Provera stoji ovde, a ne u pojedinačnoj listi, jer važi za SVAKI sažetak
+   * koji vodi na stranicu članka. Svaka lista mora projektovati
+   * `hasUsableBody`; ako ga ne projektuje, sažetak ispada — fail-closed.
+   */
+  if (value.hasUsableBody !== true) return false;
+
   return true;
 }
 
@@ -115,18 +128,10 @@ export function isValidArticleSummary(
 export function isValidHomepageArticle(
   value: unknown,
 ): value is ValidHomepageArticle {
+  // Traži upotrebljivo telo i sve ostalo što traži sažetak u listi.
   if (!isValidArticleSummary(value)) return false;
 
-  const record = value as { featuredImage?: unknown; hasUsableBody?: unknown };
-
-  /*
-   * Članak bez upotrebljivog teksta ne sme na početnu.
-   *
-   * Uslov objavljivosti u upitu traži atribuciju i izvore, ali ne i telo, pa
-   * takav članak prođe filter. Njegovu stranicu odbija `isDisplayableArticle()`
-   * i vraća 404 — kartica bi vodila u prazno.
-   */
-  if (record.hasUsableBody !== true) return false;
-
-  return isAcceptableFeaturedImage(record.featuredImage);
+  return isAcceptableFeaturedImage(
+    (value as { featuredImage?: unknown }).featuredImage,
+  );
 }

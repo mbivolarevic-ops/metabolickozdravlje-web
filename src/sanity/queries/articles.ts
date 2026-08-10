@@ -94,7 +94,12 @@ const ARTICLE_PROJECTION = `
   seo
 `;
 
-/** Kratak prikaz članka za liste. Nosi isti uslov objavljivosti. */
+/**
+ * Kratak prikaz članka za liste. Nosi isti uslov objavljivosti.
+ *
+ * Lista nije ograničena po broju, pa filtriranje ne može da ostavi rupu —
+ * vraća sve članke teme, a nevalidni jednostavno otpadaju.
+ */
 export const articlesByClusterQuery = defineQuery(`
   *[${PUBLISHABLE} && cluster->slug.current == $cluster]
     | order(reviewDate desc) {
@@ -103,7 +108,8 @@ export const articlesByClusterQuery = defineQuery(`
       "slug": slug.current,
       excerpt,
       reviewDate,
-      "cluster": cluster->{ title, "slug": slug.current }
+      "cluster": cluster->{ title, "slug": slug.current },
+      ${HAS_USABLE_BODY_PROJECTION}
     }
 `);
 

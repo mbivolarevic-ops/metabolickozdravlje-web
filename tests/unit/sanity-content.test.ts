@@ -39,6 +39,7 @@ const VALID_SUMMARY = {
   excerpt: "Ovo je sintetički opis za test.",
   reviewDate: "2026-08-05",
   cluster: { title: "Test tema", slug: "test-tema" },
+  hasUsableBody: true,
 };
 
 /** Mock koji vraća zadatu vrednost i beleži pozive. */
@@ -215,6 +216,22 @@ describe("Provere validnosti sadržaja", () => {
     );
   });
 
+  /*
+   * Regresija: uslov objavljivosti ne traži telo, pa članak bez teksta prođe
+   * filter. `isDisplayableArticle()` ga odbija i `/tekstovi/[slug]` daje 404 —
+   * kartica u bilo kojoj listi vodila bi u prazno.
+   */
+  it.each([
+    ["telo prazno", false],
+    ["polje nije projektovano", undefined],
+    ["polje je null", null],
+    ["polje pogrešnog tipa", "da"],
+  ])("odbija sažetak čiji članak nema upotrebljivo telo (%s)", (_l, body) => {
+    expect(
+      isValidArticleSummary({ ...VALID_SUMMARY, hasUsableBody: body }),
+    ).toBe(false);
+  });
+
   it.each([null, undefined, "tekst", 42, []])(
     "neispravan ulaz %p ne baca",
     (value) => {
@@ -276,6 +293,53 @@ describe("Content loaderi", () => {
     );
     expect(summaries).toHaveLength(1);
     expect(summaries[0]?._id).toBe("article-1");
+  });
+
+  /*
+   * Regresija: lista članaka teme je vodila na 404 kada članak nema telo.
+   * Ista garancija koju početna ima od commita 93a3cfd.
+   */
+  it.each([
+    ["bez tela", false],
+    ["polje nije projektovano", undefined],
+    ["polje je null", null],
+  ])("članak %s ne stiže na listu teme", async (_label, hasUsableBody) => {
+    const summaries = await loadTopicArticleSummaries(
+      "test-tema",
+      fetcherReturning([{ ...VALID_SUMMARY, hasUsableBody }]),
+    );
+    expect(summaries).toEqual([]);
+  });
+
+  it("nevalidan članak ne zauzima mesto validnom u listi teme", async () => {
+    const summaries = await loadTopicArticleSummaries(
+      "test-tema",
+      fetcherReturning([
+        { ...VALID_SUMMARY, _id: "a1", slug: "a1" },
+        { ...VALID_SUMMARY, _id: "a2", slug: "a2", hasUsableBody: false },
+        { ...VALID_SUMMARY, _id: "a3", slug: "a3" },
+      ]),
+    );
+
+    // Lista nije ograničena po broju, pa odbačen članak ne pravi rupu.
+    expect(summaries.map((s) => s.slug)).toEqual(["a1", "a3"]);
+  });
+
+  it("validan članak prolazi i nosi slug za rutu koja postoji", async () => {
+    const summaries = await loadTopicArticleSummaries(
+      "test-tema",
+      fetcherReturning([VALID_SUMMARY]),
+    );
+
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0]?.slug).toBe("test-clanak");
+    expect(summaries[0]?.hasUsableBody).toBe(true);
+  });
+
+  it("pravo prazno stanje liste teme i dalje radi", async () => {
+    await expect(
+      loadTopicArticleSummaries("test-tema", fetcherReturning([])),
+    ).resolves.toEqual([]);
   });
 
   it.each([
