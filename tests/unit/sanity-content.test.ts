@@ -2,13 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   loadArticle,
   loadArticleSlugs,
+  loadHomepageArticles,
   loadTopic,
   loadTopicArticleSummaries,
   loadTopicSlugs,
   loadTopics,
   type SanityFetcher,
 } from "@/sanity/content";
-import { isValidArticleSummary, isValidTopic } from "@/sanity/contentGuards";
+import {
+  isValidArticleSummary,
+  isValidHomepageArticle,
+  isValidTopic,
+} from "@/sanity/contentGuards";
 
 /**
  * Offline testovi konfiguracije i content loadera.
@@ -34,6 +39,7 @@ const VALID_SUMMARY = {
   excerpt: "Ovo je sintetički opis za test.",
   reviewDate: "2026-08-05",
   cluster: { title: "Test tema", slug: "test-tema" },
+  hasUsableBody: true,
 };
 
 /** Mock koji vraća zadatu vrednost i beleži pozive. */
@@ -210,6 +216,22 @@ describe("Provere validnosti sadržaja", () => {
     );
   });
 
+  /*
+   * Regresija: uslov objavljivosti ne traži telo, pa članak bez teksta prođe
+   * filter. `isDisplayableArticle()` ga odbija i `/tekstovi/[slug]` daje 404 —
+   * kartica u bilo kojoj listi vodila bi u prazno.
+   */
+  it.each([
+    ["telo prazno", false],
+    ["polje nije projektovano", undefined],
+    ["polje je null", null],
+    ["polje pogrešnog tipa", "da"],
+  ])("odbija sažetak čiji članak nema upotrebljivo telo (%s)", (_l, body) => {
+    expect(
+      isValidArticleSummary({ ...VALID_SUMMARY, hasUsableBody: body }),
+    ).toBe(false);
+  });
+
   it.each([null, undefined, "tekst", 42, []])(
     "neispravan ulaz %p ne baca",
     (value) => {
@@ -271,6 +293,53 @@ describe("Content loaderi", () => {
     );
     expect(summaries).toHaveLength(1);
     expect(summaries[0]?._id).toBe("article-1");
+  });
+
+  /*
+   * Regresija: lista članaka teme je vodila na 404 kada članak nema telo.
+   * Ista garancija koju početna ima od commita 93a3cfd.
+   */
+  it.each([
+    ["bez tela", false],
+    ["polje nije projektovano", undefined],
+    ["polje je null", null],
+  ])("članak %s ne stiže na listu teme", async (_label, hasUsableBody) => {
+    const summaries = await loadTopicArticleSummaries(
+      "test-tema",
+      fetcherReturning([{ ...VALID_SUMMARY, hasUsableBody }]),
+    );
+    expect(summaries).toEqual([]);
+  });
+
+  it("nevalidan članak ne zauzima mesto validnom u listi teme", async () => {
+    const summaries = await loadTopicArticleSummaries(
+      "test-tema",
+      fetcherReturning([
+        { ...VALID_SUMMARY, _id: "a1", slug: "a1" },
+        { ...VALID_SUMMARY, _id: "a2", slug: "a2", hasUsableBody: false },
+        { ...VALID_SUMMARY, _id: "a3", slug: "a3" },
+      ]),
+    );
+
+    // Lista nije ograničena po broju, pa odbačen članak ne pravi rupu.
+    expect(summaries.map((s) => s.slug)).toEqual(["a1", "a3"]);
+  });
+
+  it("validan članak prolazi i nosi slug za rutu koja postoji", async () => {
+    const summaries = await loadTopicArticleSummaries(
+      "test-tema",
+      fetcherReturning([VALID_SUMMARY]),
+    );
+
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0]?.slug).toBe("test-clanak");
+    expect(summaries[0]?.hasUsableBody).toBe(true);
+  });
+
+  it("pravo prazno stanje liste teme i dalje radi", async () => {
+    await expect(
+      loadTopicArticleSummaries("test-tema", fetcherReturning([])),
+    ).resolves.toEqual([]);
   });
 
   it.each([
@@ -607,5 +676,184 @@ describe("Loader članka", () => {
 
     expect(await content.loadArticle("bilo-sta")).toBeNull();
     expect(await content.loadArticleSlugs()).toEqual([]);
+  });
+});
+
+/**
+ * Članci za početnu stranicu.
+ *
+ * Ista pravila kao svuda: prava prazna lista je dozvoljena, odgovor pogrešnog
+ * OBLIKA je greška, a nevalidan pojedinačan zapis se filtrira.
+ */
+const HOMEPAGE_ARTICLE = {
+  _id: "article-1",
+  title: "Test članak",
+  slug: "test-clanak",
+  excerpt: "Ovo je sintetički opis za test.",
+  reviewDate: "2026-08-05",
+  cluster: { title: "Test tema", slug: "test-tema" },
+  featuredImage: null,
+  hasUsableBody: true,
+};
+
+const HOMEPAGE_IMAGE = {
+  alt: "Sintetički opis naslovne slike",
+  asset: { _id: "image-abc-1600x900-jpg" },
+};
+
+describe("isValidHomepageArticle", () => {
+  it("prihvata članak bez naslovne slike", () => {
+    expect(isValidHomepageArticle(HOMEPAGE_ARTICLE)).toBe(true);
+    expect(
+      isValidHomepageArticle({ ...HOMEPAGE_ARTICLE, featuredImage: undefined }),
+    ).toBe(true);
+  });
+
+  it("prihvata članak sa potpunom naslovnom slikom", () => {
+    expect(
+      isValidHomepageArticle({
+        ...HOMEPAGE_ARTICLE,
+        featuredImage: HOMEPAGE_IMAGE,
+      }),
+    ).toBe(true);
+  });
+
+  it.each([
+    ["bez asseta", { alt: "Opis" }],
+    ["bez alt teksta", { asset: { _id: "image-abc" }, alt: "" }],
+    ["prazan objekat", {}],
+  ])("odbija članak sa nevalidnom naslovnom slikom (%s)", (_l, featured) => {
+    expect(
+      isValidHomepageArticle({ ...HOMEPAGE_ARTICLE, featuredImage: featured }),
+    ).toBe(false);
+  });
+
+  /*
+   * Regresija, nađena sintetičkim QA-om: uslov objavljivosti u upitu ne traži
+   * telo, pa članak bez teksta prođe filter. `isDisplayableArticle()` ga
+   * odbija, njegova stranica daje 404 — a kartica na početnoj je vodila tamo.
+   */
+  it.each([
+    ["bez tela", false],
+    ["telo nepoznatog oblika", undefined],
+    ["telo prazno", null],
+  ])("odbija članak %s — kartica bi vodila u 404", (_l, hasUsableBody) => {
+    expect(isValidHomepageArticle({ ...HOMEPAGE_ARTICLE, hasUsableBody })).toBe(
+      false,
+    );
+  });
+
+  it("odbija članak koji ne bi prošao ni kao sažetak", () => {
+    expect(isValidHomepageArticle({ ...HOMEPAGE_ARTICLE, title: "" })).toBe(
+      false,
+    );
+    expect(
+      isValidHomepageArticle({ ...HOMEPAGE_ARTICLE, reviewDate: "2026-02-31" }),
+    ).toBe(false);
+  });
+});
+
+describe("loadHomepageArticles", () => {
+  it("propušta validne članke", async () => {
+    const articles = await loadHomepageArticles(
+      fetcherReturning([HOMEPAGE_ARTICLE]),
+    );
+    expect(articles).toHaveLength(1);
+    expect(articles[0]?.slug).toBe("test-clanak");
+  });
+
+  it("ograničava na najviše tri, i kada upit vrati više", async () => {
+    const many = Array.from({ length: 7 }, (_unused, index) => ({
+      ...HOMEPAGE_ARTICLE,
+      _id: `article-${index}`,
+      slug: `clanak-${index}`,
+    }));
+
+    expect(await loadHomepageArticles(fetcherReturning(many))).toHaveLength(3);
+  });
+
+  it("zadržava redosled koji je upit vratio", async () => {
+    const ordered = [
+      { ...HOMEPAGE_ARTICLE, _id: "a1", slug: "a1", reviewDate: "2026-08-05" },
+      { ...HOMEPAGE_ARTICLE, _id: "a2", slug: "a2", reviewDate: "2026-07-01" },
+      { ...HOMEPAGE_ARTICLE, _id: "a3", slug: "a3", reviewDate: "2026-01-15" },
+    ];
+
+    const articles = await loadHomepageArticles(fetcherReturning(ordered));
+    expect(articles.map((a) => a.slug)).toEqual(["a1", "a2", "a3"]);
+  });
+
+  it("filtrira nevalidne zapise, ostatak prolazi", async () => {
+    const articles = await loadHomepageArticles(
+      fetcherReturning([
+        HOMEPAGE_ARTICLE,
+        { ...HOMEPAGE_ARTICLE, _id: "a2", excerpt: "" },
+        { ...HOMEPAGE_ARTICLE, _id: "a3", cluster: null },
+        {
+          ...HOMEPAGE_ARTICLE,
+          _id: "a4",
+          featuredImage: { alt: "Bez asseta" },
+        },
+        { ...HOMEPAGE_ARTICLE, _id: "a5", hasUsableBody: false },
+        "nije objekat",
+      ]),
+    );
+
+    expect(articles).toHaveLength(1);
+    expect(articles[0]?._id).toBe("article-1");
+  });
+
+  it("popunjava do tri tek posle filtriranja, ne pre njega", async () => {
+    // Upit uzima jedan zapis više, da odbačen članak ne ostavi rupu u listi.
+    const articles = await loadHomepageArticles(
+      fetcherReturning([
+        { ...HOMEPAGE_ARTICLE, _id: "a1", slug: "a1" },
+        { ...HOMEPAGE_ARTICLE, _id: "a2", slug: "a2", hasUsableBody: false },
+        { ...HOMEPAGE_ARTICLE, _id: "a3", slug: "a3" },
+        { ...HOMEPAGE_ARTICLE, _id: "a4", slug: "a4" },
+      ]),
+    );
+
+    expect(articles.map((a) => a.slug)).toEqual(["a1", "a3", "a4"]);
+  });
+
+  it("prava prazna lista ostaje prazna lista", async () => {
+    await expect(loadHomepageArticles(fetcherReturning([]))).resolves.toEqual(
+      [],
+    );
+  });
+
+  it.each([
+    ["null", null],
+    ["undefined", undefined],
+    ["objekat", { nije: "niz" }],
+    ["string", "nije niz"],
+  ])("odbija malformiran odgovor: %s", async (_label, value) => {
+    await expect(loadHomepageArticles(fetcherReturning(value))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it("greška ne otkriva CMS podatke, upit ni projekat", async () => {
+    const message = await loadHomepageArticles(
+      fetcherReturning({ tajniPodatak: "ne sme se videti", _id: "doc-1" }),
+    ).catch((error: unknown) => String(error));
+
+    expect(message).not.toContain("ne sme se videti");
+    expect(message).not.toContain("doc-1");
+    expect(message).not.toContain("_type ==");
+    expect(message).not.toContain("jjinmc3k");
+  });
+
+  it("odbijen fetch se propagira", async () => {
+    await expect(loadHomepageArticles(rejectingFetcher)).rejects.toThrow(
+      "mrežna greška",
+    );
+  });
+
+  it("bez konfiguracije vraća praznu listu, bez pada", async () => {
+    setEnv(undefined, undefined);
+    const content = await import("@/sanity/content");
+    expect(await content.loadHomepageArticles()).toEqual([]);
   });
 });

@@ -53,6 +53,28 @@ const FEATURED_IMAGE_PROJECTION = `
   }
 `;
 
+/**
+ * Da li članak ima telo koje se stvarno može pročitati.
+ *
+ * Uslov objavljivosti iznad NE traži telo — traži atribuciju i izvore. Članak
+ * bez teksta zato prolazi filter, ali ga `isDisplayableArticle()` odbija, pa
+ * njegova stranica daje 404. Lista koja bi ga prikazala vodila bi čitaoca u
+ * prazno.
+ *
+ * `coalesce(..., false)` je nužan: `count()` nad odsutnim poljem vraća `null`,
+ * a `null > 0` je opet `null`, ne `false`.
+ *
+ * Ovo je približna provera, namerno ista po duhu kao `hasUsableBody()`: bar
+ * jedan tekstualni blok sa bar jednim nepraznim spanom. Konačnu reč i dalje
+ * ima runtime guard.
+ */
+const HAS_USABLE_BODY_PROJECTION = `
+  "hasUsableBody": coalesce(
+    count(body[_type == "block" && count(children[defined(text) && text != ""]) > 0]) > 0,
+    false
+  )
+`;
+
 /** Projekcija koja se koristi svuda gde se članak prikazuje. */
 const ARTICLE_PROJECTION = `
   _id,
@@ -72,7 +94,12 @@ const ARTICLE_PROJECTION = `
   seo
 `;
 
-/** Kratak prikaz članka za liste. Nosi isti uslov objavljivosti. */
+/**
+ * Kratak prikaz članka za liste. Nosi isti uslov objavljivosti.
+ *
+ * Lista nije ograničena po broju, pa filtriranje ne može da ostavi rupu —
+ * vraća sve članke teme, a nevalidni jednostavno otpadaju.
+ */
 export const articlesByClusterQuery = defineQuery(`
   *[${PUBLISHABLE} && cluster->slug.current == $cluster]
     | order(reviewDate desc) {
@@ -81,8 +108,34 @@ export const articlesByClusterQuery = defineQuery(`
       "slug": slug.current,
       excerpt,
       reviewDate,
-      "cluster": cluster->{ title, "slug": slug.current }
+      "cluster": cluster->{ title, "slug": slug.current },
+      ${HAS_USABLE_BODY_PROJECTION}
     }
+`);
+
+/**
+ * Nedavno stručno provereni članci — za početnu stranicu.
+ *
+ * Sortira se po `reviewDate`, a ne po datumu objavljivanja: model taj datum
+ * nema, i to nije propust. Ono što čitaocu nešto znači jeste kada je tekst
+ * poslednji put stručno proveren, pa se po tome i ređa (docs/00 §5.2).
+ * Zato sekcija na početnoj i ne kaže „najnovije“.
+ *
+ * Projekcija je sažetak iz liste plus naslovna slika za sličicu. Telo,
+ * izvori, biografije i SEO se NE povlače — početnoj ne trebaju, a svaki
+ * suvišan podatak je podatak koji negde može da procuri.
+ */
+export const recentlyReviewedArticlesQuery = defineQuery(`
+  *[${PUBLISHABLE}] | order(reviewDate desc)[0...4] {
+    _id,
+    title,
+    "slug": slug.current,
+    excerpt,
+    reviewDate,
+    "cluster": cluster->{ title, "slug": slug.current },
+    ${FEATURED_IMAGE_PROJECTION},
+    ${HAS_USABLE_BODY_PROJECTION}
+  }
 `);
 
 /** Jedan članak, po slug-u teme i slug-u članka. */

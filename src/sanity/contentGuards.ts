@@ -1,7 +1,9 @@
 import type {
   AllClustersQueryResult,
   ArticlesByClusterQueryResult,
+  RecentlyReviewedArticlesQueryResult,
 } from "../../sanity.types";
+import { isAcceptableFeaturedImage } from "./bodyGuards";
 
 /**
  * Runtime provere za sadržaj koji se prikazuje na stranicama tema.
@@ -74,6 +76,14 @@ export function isValidTopic(value: unknown): value is ValidTopic {
   return true;
 }
 
+/**
+ * Sažetak članka za početnu — isto što i sažetak u listi, plus opciona
+ * naslovna slika za sličicu.
+ */
+export interface ValidHomepageArticle extends ValidArticleSummary {
+  featuredImage: RecentlyReviewedArticlesQueryResult[number]["featuredImage"];
+}
+
 export function isValidArticleSummary(
   value: unknown,
 ): value is ValidArticleSummary {
@@ -89,5 +99,39 @@ export function isValidArticleSummary(
   if (!isRecord(cluster)) return false;
   if (!hasText(cluster.title) || !hasText(cluster.slug)) return false;
 
+  /*
+   * ⛔ Članak bez upotrebljivog teksta ne sme ni na jednu listu.
+   *
+   * Uslov objavljivosti u upitu traži atribuciju, datum provere i izvore — ali
+   * NE i telo. Takav članak prođe filter, a `isDisplayableArticle()` ga odbija,
+   * pa `/tekstovi/[slug]` vraća 404. Kartica bi vodila u prazno.
+   *
+   * Provera stoji ovde, a ne u pojedinačnoj listi, jer važi za SVAKI sažetak
+   * koji vodi na stranicu članka. Svaka lista mora projektovati
+   * `hasUsableBody`; ako ga ne projektuje, sažetak ispada — fail-closed.
+   */
+  if (value.hasUsableBody !== true) return false;
+
   return true;
+}
+
+/**
+ * Članak koji sme na početnu.
+ *
+ * Uz sve što traži sažetak, naslovna slika mora biti prihvatljiva: odsutna
+ * je u redu, prisutna mora biti potpuna.
+ *
+ * Zašto neispravna slika izbacuje CEO članak, a ne samo sličicu: isti podatak
+ * na stranici članka obara prikaz i daje 404 (v. `loadArticle`). Kartica koja
+ * bi ostala vodila bi čitaoca u 404. Bolje je da je nema.
+ */
+export function isValidHomepageArticle(
+  value: unknown,
+): value is ValidHomepageArticle {
+  // Traži upotrebljivo telo i sve ostalo što traži sažetak u listi.
+  if (!isValidArticleSummary(value)) return false;
+
+  return isAcceptableFeaturedImage(
+    (value as { featuredImage?: unknown }).featuredImage,
+  );
 }
