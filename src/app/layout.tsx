@@ -10,7 +10,6 @@ import {
   SITE_LOCALE,
   SITE_NAME,
   SITE_TITLE,
-  canonicalUrl,
   siteUrl,
 } from "@/site/config";
 import "@/styles/globals.css";
@@ -59,15 +58,23 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  alternates: {
-    canonical: canonicalUrl(),
-  },
+  /*
+   * ⛔ NEMA `alternates.canonical` ni `openGraph.url` ovde.
+   *
+   * Sve u root metadata se NASLEĐUJE — i na stranice koje ne postoje. Kanonska
+   * adresa postavljena ovde značila bi da svaka nepostojeća adresa tvrdi da je
+   * ona zapravo početna stranica. To nije sitnica: kanonska adresa je izjava
+   * kojoj je stranica prava, a 404 nije nijedna stranica.
+   *
+   * Zato canonical postavlja svaka STVARNA stranica za sebe. Globalna 404 ga
+   * onda nema — što je tačno, jer nema šta da tvrdi. Lažan canonical na
+   * trenutnu nepoznatu adresu bio bi jednako pogrešan.
+   */
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    url: canonicalUrl(),
     locale: SITE_LOCALE,
   },
   twitter: {

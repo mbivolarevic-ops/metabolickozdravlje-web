@@ -119,23 +119,38 @@ describe("Root metadata", () => {
     expect(title.template).toBe("%s · metabolickozdravlje.rs");
   });
 
-  it("ima naziv aplikacije, opis i kanonsku adresu početne", () => {
+  it("ima naziv aplikacije i opis", () => {
     expect(rootMetadata.applicationName).toBe("metabolickozdravlje.rs");
     expect(rootMetadata.description).toContain("Pouzdane informacije");
-    expect(rootMetadata.alternates?.canonical).toBe(
-      "https://metabolickozdravlje.rs/",
-    );
   });
 
-  it("ima osnovni Open Graph i Twitter card", () => {
+  /*
+   * ⛔ Root metadata se NASLEĐUJE na svaku stranicu, uključujući 404.
+   * Kanonska adresa ovde značila bi da svaka nepostojeća adresa tvrdi da je
+   * zapravo početna stranica. Postavlja je svaka stvarna stranica za sebe.
+   */
+  it("NE nosi kanonsku adresu ni og:url — to bi nasledila i 404", () => {
+    expect(rootMetadata.alternates?.canonical).toBeUndefined();
+    expect(
+      (rootMetadata.openGraph as Record<string, unknown> | undefined)?.url,
+    ).toBeUndefined();
+  });
+
+  it("uklanjanje canonical nije uklonilo osnovu", () => {
+    expect(rootMetadata.metadataBase?.toString()).toBe(
+      "https://metabolickozdravlje.rs/",
+    );
+
     const og = rootMetadata.openGraph as Record<string, unknown>;
     expect(og.type).toBe("website");
     expect(og.siteName).toBe("metabolickozdravlje.rs");
     expect(og.locale).toBe("sr_RS");
-    expect(og.url).toBe("https://metabolickozdravlje.rs/");
+    expect(og.title).toBe("Metaboličko zdravlje, objašnjeno jasno i bez osude");
 
     const tw = rootMetadata.twitter as Record<string, unknown>;
     expect(tw.card).toBe("summary_large_image");
+
+    expect(rootMetadata.robots).toMatchObject({ index: false, follow: false });
   });
 
   /*
@@ -161,6 +176,47 @@ describe("Metadata početne", () => {
     expect(homeMetadata.alternates?.canonical).toBe(
       "https://metabolickozdravlje.rs/",
     );
+  });
+
+  it("sama nosi og:url, koji više ne dolazi iz layout-a", () => {
+    expect((homeMetadata.openGraph as Record<string, unknown>).url).toBe(
+      "https://metabolickozdravlje.rs/",
+    );
+  });
+});
+
+/**
+ * Nasleđivanje metapodataka na 404.
+ *
+ * Globalna `not-found.tsx` ne može da izveze `generateMetadata` — Next za nju
+ * koristi isključivo ono što je nasleđeno iz root layout-a. Zato je jedini
+ * način da 404 nema kanonsku adresu taj da je root nema.
+ *
+ * Ovo je simulacija tog spajanja; stvarni HTML je proveren u QA-u.
+ */
+describe("Globalna 404 i nasleđeni metapodaci", () => {
+  /** Ono što 404 stranica stvarno dobije: samo root, bez ičega svog. */
+  const nasledjeno = { ...rootMetadata };
+
+  it("404 ne dobija kanonsku adresu početne", () => {
+    expect(nasledjeno.alternates?.canonical).toBeUndefined();
+  });
+
+  it("404 ne dobija ni og:url početne", () => {
+    expect(
+      (nasledjeno.openGraph as Record<string, unknown> | undefined)?.url,
+    ).toBeUndefined();
+  });
+
+  it("404 i dalje nasleđuje noindex", () => {
+    expect(nasledjeno.robots).toMatchObject({ index: false, follow: false });
+  });
+
+  it("stranica 404 ne izvozi sopstvenu kanonsku adresu", async () => {
+    const modul: Record<string, unknown> = await import("@/app/not-found");
+
+    expect(modul.metadata).toBeUndefined();
+    expect(modul.generateMetadata).toBeUndefined();
   });
 });
 
@@ -199,11 +255,16 @@ describe("Metadata teme", () => {
     );
   });
 
+  /*
+   * Prazan objekat znači da tema nema svoju kanonsku adresu — a pošto je ni
+   * root više ne nosi, nevalidna tema ne emituje nikakav obmanjujući canonical.
+   */
   it("nevalidna tema ne dobija ni naslov ni canonical", async () => {
     getTopic.mockResolvedValue(null);
 
     const meta = await topicMetadata(params({ cluster: "nema-je" }));
     expect(meta).toEqual({});
+    expect({ ...rootMetadata, ...meta }.alternates?.canonical).toBeUndefined();
   });
 
   /*
@@ -246,7 +307,10 @@ describe("Metadata članka", () => {
 
   it("neprikaziv članak ne dobija metapodatke", async () => {
     getArticle.mockResolvedValue(null);
-    expect(await articleMetadata(params({ slug: "x" }))).toEqual({});
+    const meta = await articleMetadata(params({ slug: "x" }));
+
+    expect(meta).toEqual({});
+    expect({ ...rootMetadata, ...meta }.alternates?.canonical).toBeUndefined();
   });
 
   it("bez naslovne slike ne izmišlja OG sliku", async () => {

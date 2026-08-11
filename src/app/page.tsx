@@ -40,7 +40,10 @@ import { websiteJsonLd } from "@/site/jsonLd";
 export const metadata: Metadata = {
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
+  // Kanonska adresa i `og:url` stoje ovde, a ne u layout-u: root metadata se
+  // nasleđuje i na 404, koja nema pravo da tvrdi da je početna stranica.
   alternates: { canonical: canonicalUrl() },
+  openGraph: { type: "website", url: canonicalUrl() },
 };
 
 export default async function HomePage() {
