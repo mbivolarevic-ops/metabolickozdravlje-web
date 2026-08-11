@@ -184,12 +184,17 @@ export const sitemapArticlesQuery = defineQuery(`
   }
 `);
 
-/** Slug vrednosti objavljivih članaka — za `generateStaticParams`. */
-export const publishableArticlePathsQuery = defineQuery(`
-  *[${PUBLISHABLE}] {
-    "slug": slug.current
-  }
-`);
+/*
+ * `publishableArticlePathsQuery` je UKLONJEN.
+ *
+ * Vraćao je samo slug, bez ijednog podatka o telu, autoru ili slici, pa je
+ * `generateStaticParams` generisao rutu i za članak koji stranica odbija —
+ * statički 404. Slug vrednosti sada dolaze iz `sitemapArticlesQuery`, kroz
+ * isti guard kao i sve ostale liste.
+ *
+ * Upit nije ostavljen „za svaki slučaj“ namerno: slabija provera koja stoji
+ * pored jače pre ili kasnije bude upotrebljena.
+ */
 
 /** Parovi (tema, članak) za buduće generisanje statičkih putanja. */
 export const publishableArticleSlugsQuery = defineQuery(`
