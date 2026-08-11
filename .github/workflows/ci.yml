@@ -5,10 +5,25 @@ on:
     branches: [main]
   pull_request:
 
+# Jedan run po grani. Nov push na istu granu čini prethodni run zastarelim —
+# on više ne opisuje ništa što će biti mergovano.
+#
+# ⛔ `cancel-in-progress` je izraz, a ne `true`: prekidaju se SAMO runovi nad
+# pull request-om. Run na `main` se nikada ne prekida — to je istorija grane
+# koja je već mergovana, i required check koji za nju mora ostati zabeležen.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     name: Lint · Typecheck · Test · Build
     runs-on: ubuntu-latest
+    # Ovaj job traje 74–97 sekundi. Podrazumevani limit je 6 sati, pa bi
+    # zaglavljen korak držao runner sto puta duže nego što posao traje.
+    # 15 minuta je oko desetostruko iznad izmerenog — dovoljno da spor mrežni
+    # korak prođe, dovoljno kratko da kvar bude vidljiv isti čas.
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v7
