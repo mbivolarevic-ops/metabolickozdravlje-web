@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { getTopics } from "@/sanity/content";
+import { canonicalUrl } from "@/site/config";
 
 /**
  * Pregled svih tema (`/teme`).
@@ -16,7 +17,13 @@ import { getTopics } from "@/sanity/content";
 export const metadata: Metadata = {
   title: "Teme",
   description:
-    "Pregled tema o metaboličkom zdravlju za koje se priprema edukativni sadržaj.",
+    "Pregled tema o metaboličkom zdravlju za koje se priprema edukativni sadržaj. Svaka tema okuplja tekstove koji odgovaraju na jedno pitanje.",
+  alternates: { canonical: canonicalUrl("teme") },
+  openGraph: {
+    type: "website",
+    title: "Teme",
+    url: canonicalUrl("teme"),
+  },
 };
 
 export default async function TopicsPage() {

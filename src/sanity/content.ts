@@ -12,8 +12,8 @@ import { allClustersQuery, clusterBySlugQuery } from "./queries/clusters";
 import {
   articleBySlugOnlyQuery,
   articlesByClusterQuery,
-  publishableArticlePathsQuery,
   recentlyReviewedArticlesQuery,
+  sitemapArticlesQuery,
 } from "./queries/articles";
 import { isDisplayableArticle, type DisplayableArticle } from "./guards";
 import { isAcceptableFeaturedImage, isRenderableBody } from "./bodyGuards";
@@ -132,6 +132,85 @@ export async function loadHomepageArticles(
 }
 
 /**
+ * Adresa i datum poslednje izmene — sve što sitemap-u treba.
+ *
+ * `lastModified` je `null` kada CMS podatak nije upotrebljiv. Datum se tada
+ * izostavlja iz sitemap-a; datum builda NIJE datum sadržaja i ne izmišlja se.
+ */
+export interface SitemapEntry {
+  slug: string;
+  lastModified: string | null;
+}
+
+/** Prihvata samo ISO datum koji se stvarno može parsirati. */
+function toLastModified(value: unknown): string | null {
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : value;
+}
+
+/**
+ * Prikazivi članci — JEDAN izvor istine za svaki spisak adresa članaka.
+ *
+ * Koriste ga i sitemap i `generateStaticParams`. Ranije su to bila dva puta:
+ * sitemap je proveravao telo, a statički parametri nisu, pa se za članak bez
+ * teksta generisala ruta koja odmah vraća 404. Dva puta znače dva ugovora, a
+ * dva ugovora se pre ili kasnije raziđu.
+ *
+ * Filtrira ISTIM guardom koji odlučuje sme li članak na listu koja vodi na
+ * njegovu stranicu (`isValidHomepageArticle`) — dakle: nije draft, ima autora,
+ * recenzenta, datum provere i bar jedan izvor, ima upotrebljivo telo i, ako
+ * ima naslovnu sliku, ona je ispravna.
+ *
+ * Telo se NE povlači: `hasUsableBody` je projekcija koja vraća samo `true` ili
+ * `false`, pa provera ne košta prenos celog Portable Text sadržaja.
+ */
+async function loadDisplayableArticleEntries(
+  fetcher?: SanityFetcher,
+): Promise<SitemapEntry[]> {
+  const client = resolveFetcher(fetcher);
+  if (client === null) return [];
+
+  const result = await client.fetch<unknown>(sitemapArticlesQuery);
+
+  return expectArray(result, "prikazivi članci")
+    .filter(isValidHomepageArticle)
+    .map((article) => ({
+      slug: article.slug,
+      lastModified: toLastModified(
+        (article as { _updatedAt?: unknown })._updatedAt,
+      ),
+    }));
+}
+
+/**
+ * Članci za sitemap.
+ *
+ * Sitemap ne sme da sadrži adresu koja vraća 404 — to je jedina stvar koja ga
+ * čini štetnim.
+ */
+export async function loadSitemapArticles(
+  fetcher?: SanityFetcher,
+): Promise<SitemapEntry[]> {
+  return loadDisplayableArticleEntries(fetcher);
+}
+
+/** Teme za sitemap — iz istog validiranog izvora kao i stranica `/teme`. */
+export async function loadSitemapTopics(
+  fetcher?: SanityFetcher,
+): Promise<SitemapEntry[]> {
+  const topics = await loadTopics(fetcher);
+
+  return topics.map((topic) => ({
+    slug: topic.slug,
+    lastModified: toLastModified(
+      (topic as { _updatedAt?: unknown })._updatedAt,
+    ),
+  }));
+}
+
+/**
  * Jedan članak po sopstvenom slug-u, spreman za prikaz.
  *
  * Razlikuje TRI ishoda:
@@ -172,22 +251,19 @@ export async function loadArticle(
   return result;
 }
 
-/** Slug vrednosti objavljivih članaka — za `generateStaticParams`. */
+/**
+ * Slug vrednosti za `generateStaticParams`.
+ *
+ * Isti izvor kao sitemap, pa se ruta generiše samo za članak koji se stvarno
+ * prikazuje. Ranije je ovde bio zaseban, slabiji upit koji je gledao samo
+ * postojanje polja: članak bez teksta dobijao je statičku rutu koja zatim
+ * vraća 404.
+ */
 export async function loadArticleSlugs(
   fetcher?: SanityFetcher,
 ): Promise<string[]> {
-  const client = resolveFetcher(fetcher);
-  if (client === null) return [];
-
-  const result = await client.fetch<unknown>(publishableArticlePathsQuery);
-
-  return expectArray(result, "adrese objavljivih članaka")
-    .map((entry) =>
-      typeof entry === "object" && entry !== null && "slug" in entry
-        ? (entry as { slug?: unknown }).slug
-        : undefined,
-    )
-    .filter((slug): slug is string => typeof slug === "string" && slug !== "");
+  const entries = await loadDisplayableArticleEntries(fetcher);
+  return entries.map((entry) => entry.slug);
 }
 
 /** Slug vrednosti validnih tema — za `generateStaticParams`. */

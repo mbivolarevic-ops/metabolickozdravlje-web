@@ -8,7 +8,10 @@ import { TreatmentOverview } from "@/components/home/TreatmentOverview";
 import { EditorialMethod } from "@/components/home/EditorialMethod";
 import { AssessmentTeaser } from "@/components/home/AssessmentTeaser";
 import { HomeFinalCta } from "@/components/home/HomeFinalCta";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { getHomepageArticles, getTopics } from "@/sanity/content";
+import { SITE_DESCRIPTION, SITE_TITLE, canonicalUrl } from "@/site/config";
+import { websiteJsonLd } from "@/site/jsonLd";
 
 /**
  * Početna stranica.
@@ -29,18 +32,18 @@ import { getHomepageArticles, getTopics } from "@/sanity/content";
  * se danas i zatiče.
  */
 
+/*
+ * Naslov početne je `default` iz layout-a, bez `%s` šablona — početna nije
+ * „podstranica“ svog sajta. Kanonska adresa i Open Graph podaci su nasleđeni;
+ * ovde se izričito ponavlja samo kanonska adresa, da se vidi da je namerna.
+ */
 export const metadata: Metadata = {
-  title: "Metaboličko zdravlje, objašnjeno jasno i bez osude",
-  description:
-    "Pouzdane informacije o gojaznosti, šećeru u krvi, hormonima i drugim temama koje utiču na metaboličko zdravlje. Svaki tekst ima autora, stručnog recenzenta i datum provere.",
-  /*
-   * Bez `canonical`: projekat još nema `metadataBase` ni potvrđen produkcioni
-   * domen, pa bi relativna kanonska adresa bila nagađanje. Dodaje se kada
-   * domen bude potvrđen.
-   *
-   * Bez `openGraph`: nema slike koju bismo pošteno mogli da ponudimo, a
-   * izmišljena je gora od nijedne. Globalni `noindex` iz layout-a ostaje.
-   */
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  // Kanonska adresa i `og:url` stoje ovde, a ne u layout-u: root metadata se
+  // nasleđuje i na 404, koja nema pravo da tvrdi da je početna stranica.
+  alternates: { canonical: canonicalUrl() },
+  openGraph: { type: "website", url: canonicalUrl() },
 };
 
 export default async function HomePage() {
@@ -51,6 +54,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd data={websiteJsonLd()} />
       <HomeHero />
       <TrustBar />
       <AntiStigmaSection />

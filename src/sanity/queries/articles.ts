@@ -160,12 +160,41 @@ export const articleBySlugOnlyQuery = defineQuery(`
     }
 `);
 
-/** Slug vrednosti objavljivih članaka — za `generateStaticParams`. */
-export const publishableArticlePathsQuery = defineQuery(`
-  *[${PUBLISHABLE}] {
-    "slug": slug.current
+/**
+ * Članci za sitemap.
+ *
+ * Ista projekcija kao za početnu — dakle isti podaci koje traže postojeći
+ * guardovi — samo bez ograničenja broja i uz `_updatedAt`. Telo članka se NE
+ * povlači: sitemap-u treba adresa, ne tekst.
+ *
+ * Zašto ne `publishableArticlePathsQuery`: on vraća samo slug i ne zna ništa o
+ * telu, autoru ni slici, pa bi u sitemap ušle i adrese koje vraćaju 404.
+ */
+export const sitemapArticlesQuery = defineQuery(`
+  *[${PUBLISHABLE}] | order(reviewDate desc) {
+    _id,
+    _updatedAt,
+    title,
+    "slug": slug.current,
+    excerpt,
+    reviewDate,
+    "cluster": cluster->{ title, "slug": slug.current },
+    ${FEATURED_IMAGE_PROJECTION},
+    ${HAS_USABLE_BODY_PROJECTION}
   }
 `);
+
+/*
+ * `publishableArticlePathsQuery` je UKLONJEN.
+ *
+ * Vraćao je samo slug, bez ijednog podatka o telu, autoru ili slici, pa je
+ * `generateStaticParams` generisao rutu i za članak koji stranica odbija —
+ * statički 404. Slug vrednosti sada dolaze iz `sitemapArticlesQuery`, kroz
+ * isti guard kao i sve ostale liste.
+ *
+ * Upit nije ostavljen „za svaki slučaj“ namerno: slabija provera koja stoji
+ * pored jače pre ili kasnije bude upotrebljena.
+ */
 
 /** Parovi (tema, članak) za buduće generisanje statičkih putanja. */
 export const publishableArticleSlugsQuery = defineQuery(`

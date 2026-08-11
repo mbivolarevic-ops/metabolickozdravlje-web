@@ -3,6 +3,8 @@ import {
   loadArticle,
   loadArticleSlugs,
   loadHomepageArticles,
+  loadSitemapArticles,
+  loadSitemapTopics,
   loadTopic,
   loadTopicArticleSummaries,
   loadTopicSlugs,
@@ -651,7 +653,15 @@ describe("Loader članka", () => {
     );
   });
 
-  it("slug-ovi za statičke parametre preskaču prazne i neispravne vrednosti", async () => {
+  /*
+   * Ranije je ovaj test dokazivao da loader propušta goli `{ slug }` zapis —
+   * što je i bio problem: takav zapis ništa ne govori o telu, autoru ni slici,
+   * pa je statička ruta nastajala i za članak koji stranica odbija.
+   *
+   * Sada je ugovor stroži: propušta se samo članak koji zadovoljava isti guard
+   * kao prikaz. Nepotpun zapis ispada — fail-closed.
+   */
+  it("slug-ovi za statičke parametre odbijaju nepotpune zapise", async () => {
     const slugs = await loadArticleSlugs(
       fetcherReturning([
         { slug: "test-clanak" },
@@ -661,7 +671,7 @@ describe("Loader članka", () => {
         "nije objekat",
       ]),
     );
-    expect(slugs).toEqual(["test-clanak"]);
+    expect(slugs).toEqual([]);
   });
 
   it("malformiran odgovor za slug-ove baca, ne postaje prazna lista", async () => {
@@ -855,5 +865,219 @@ describe("loadHomepageArticles", () => {
     setEnv(undefined, undefined);
     const content = await import("@/sanity/content");
     expect(await content.loadHomepageArticles()).toEqual([]);
+  });
+});
+
+/**
+ * Podaci za sitemap.
+ *
+ * Sitemap koji sadrži adresu koja vraća 404 je gori od sitemap-a koji je nema,
+ * pa se ovde koristi isti guard koji odlučuje sme li članak na listu.
+ */
+describe("loadSitemapArticles", () => {
+  const SITEMAP_ARTICLE = {
+    ...HOMEPAGE_ARTICLE,
+    _updatedAt: "2026-08-06T10:00:00Z",
+  };
+
+  it("vraća adresu i datum poslednje izmene", async () => {
+    const entries = await loadSitemapArticles(
+      fetcherReturning([SITEMAP_ARTICLE]),
+    );
+
+    expect(entries).toEqual([
+      { slug: "test-clanak", lastModified: "2026-08-06T10:00:00Z" },
+    ]);
+  });
+
+  it.each([
+    ["bez tela", { hasUsableBody: false }],
+    ["bez sažetka", { excerpt: "" }],
+    ["nemoguć datum provere", { reviewDate: "2026-02-31" }],
+    ["bez teme", { cluster: null }],
+    ["malformirana naslovna slika", { featuredImage: { alt: "Bez asseta" } }],
+  ])("odbija članak %s", async (_label, override) => {
+    const entries = await loadSitemapArticles(
+      fetcherReturning([{ ...SITEMAP_ARTICLE, ...override }]),
+    );
+    expect(entries).toEqual([]);
+  });
+
+  it("izostavlja datum kada nije upotrebljiv, umesto da ga izmisli", async () => {
+    for (const bad of [undefined, null, "", "juče", 12345]) {
+      const entries = await loadSitemapArticles(
+        fetcherReturning([{ ...SITEMAP_ARTICLE, _updatedAt: bad }]),
+      );
+      expect(entries[0]?.lastModified).toBeNull();
+    }
+  });
+
+  it("prava prazna lista ostaje prazna", async () => {
+    await expect(loadSitemapArticles(fetcherReturning([]))).resolves.toEqual(
+      [],
+    );
+  });
+
+  it.each([
+    ["null", null],
+    ["objekat", { nije: "niz" }],
+    ["string", "nije niz"],
+  ])("malformiran odgovor (%s) baca", async (_label, value) => {
+    await expect(loadSitemapArticles(fetcherReturning(value))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it("bez konfiguracije vraća praznu listu", async () => {
+    setEnv(undefined, undefined);
+    const content = await import("@/sanity/content");
+    expect(await content.loadSitemapArticles()).toEqual([]);
+  });
+});
+
+/**
+ * `loadArticleSlugs` hrani `generateStaticParams`.
+ *
+ * Regresija: ranije je koristio zaseban, slabiji upit koji je gledao samo
+ * postojanje polja. Članak bez teksta dobijao je statičku rutu koja odmah
+ * vraća 404 — sitemap ga je izostavljao, statičko generisanje nije. Sada oba
+ * idu kroz isti guard.
+ */
+describe("loadArticleSlugs — ista kapija kao prikaz članka", () => {
+  const ENTRY = { ...HOMEPAGE_ARTICLE, _updatedAt: "2026-08-06T10:00:00Z" };
+
+  it("validan članak ulazi u statičke parametre", async () => {
+    expect(await loadArticleSlugs(fetcherReturning([ENTRY]))).toEqual([
+      "test-clanak",
+    ]);
+  });
+
+  it.each([
+    ["telo prazno", false],
+    ["polje nije projektovano", undefined],
+    ["polje je null", null],
+    ["polje pogrešnog tipa", "da"],
+    ["polje je broj", 1],
+  ])("članak sa hasUsableBody %s ne ulazi", async (_l, hasUsableBody) => {
+    expect(
+      await loadArticleSlugs(fetcherReturning([{ ...ENTRY, hasUsableBody }])),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ["bez sažetka", { excerpt: "" }],
+    ["nemoguć datum provere", { reviewDate: "2026-02-31" }],
+    ["bez teme", { cluster: null }],
+    ["malformirana naslovna slika", { featuredImage: { alt: "Bez asseta" } }],
+  ])("članak %s ne ulazi", async (_l, override) => {
+    expect(
+      await loadArticleSlugs(fetcherReturning([{ ...ENTRY, ...override }])),
+    ).toEqual([]);
+  });
+
+  it("nevalidan članak ne zauzima mesto validnom", async () => {
+    const slugs = await loadArticleSlugs(
+      fetcherReturning([
+        { ...ENTRY, _id: "a1", slug: "a1" },
+        { ...ENTRY, _id: "a2", slug: "a2", hasUsableBody: false },
+        { ...ENTRY, _id: "a3", slug: "a3" },
+      ]),
+    );
+
+    expect(slugs).toEqual(["a1", "a3"]);
+  });
+
+  it("prazan dataset daje prazan skup parametara", async () => {
+    await expect(loadArticleSlugs(fetcherReturning([]))).resolves.toEqual([]);
+  });
+
+  it.each([
+    ["null", null],
+    ["undefined", undefined],
+    ["objekat", { nije: "niz" }],
+    ["string", "nije niz"],
+  ])("malformiran odgovor (%s) baca bezbednu grešku", async (_l, value) => {
+    await expect(loadArticleSlugs(fetcherReturning(value))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it("greška ne otkriva CMS podatke, upit ni projekat", async () => {
+    const message = await loadArticleSlugs(
+      fetcherReturning({ tajniPodatak: "ne sme se videti", _id: "doc-1" }),
+    ).catch((error: unknown) => String(error));
+
+    expect(message).not.toContain("ne sme se videti");
+    expect(message).not.toContain("doc-1");
+    expect(message).not.toContain("_type ==");
+    expect(message).not.toContain("jjinmc3k");
+  });
+
+  it("bez konfiguracije daje prazan skup, bez pada", async () => {
+    setEnv(undefined, undefined);
+    const content = await import("@/sanity/content");
+    expect(await content.loadArticleSlugs()).toEqual([]);
+  });
+
+  /*
+   * Ugovor koji je ranije nedostajao: sitemap i statički parametri moraju
+   * opisivati ISTI skup članaka. Inače postoji ruta koja nije u sitemap-u, ili
+   * adresa u sitemap-u koja vraća 404.
+   */
+  it("daje isti skup kao sitemap, u istom stanju podataka", async () => {
+    const dataset = [
+      { ...ENTRY, _id: "a1", slug: "a1" },
+      { ...ENTRY, _id: "a2", slug: "a2", hasUsableBody: false },
+      { ...ENTRY, _id: "a3", slug: "a3", featuredImage: { alt: "Bez asseta" } },
+      { ...ENTRY, _id: "a4", slug: "a4" },
+    ];
+
+    const slugs = await loadArticleSlugs(fetcherReturning(dataset));
+    const sitemap = await loadSitemapArticles(fetcherReturning(dataset));
+
+    expect(slugs).toEqual(sitemap.map((entry) => entry.slug));
+    expect(slugs).toEqual(["a1", "a4"]);
+  });
+});
+
+describe("loadSitemapTopics", () => {
+  const SITEMAP_TOPIC = { ...VALID_TOPIC, _updatedAt: "2026-08-05T09:00:00Z" };
+
+  it("vraća adresu i datum poslednje izmene", async () => {
+    const entries = await loadSitemapTopics(fetcherReturning([SITEMAP_TOPIC]));
+
+    expect(entries).toEqual([
+      { slug: "test-tema", lastModified: "2026-08-05T09:00:00Z" },
+    ]);
+  });
+
+  it("koristi isti filter kao stranica `/teme`", async () => {
+    const entries = await loadSitemapTopics(
+      fetcherReturning([
+        SITEMAP_TOPIC,
+        { ...SITEMAP_TOPIC, _id: "t2", slug: "druga", intro: "" },
+      ]),
+    );
+
+    expect(entries.map((e) => e.slug)).toEqual(["test-tema"]);
+  });
+
+  it("izostavlja neupotrebljiv datum", async () => {
+    const entries = await loadSitemapTopics(
+      fetcherReturning([{ ...SITEMAP_TOPIC, _updatedAt: "nije datum" }]),
+    );
+    expect(entries[0]?.lastModified).toBeNull();
+  });
+
+  it("malformiran odgovor baca", async () => {
+    await expect(loadSitemapTopics(fetcherReturning(null))).rejects.toThrow(
+      /nije vratio listu/,
+    );
+  });
+
+  it("bez konfiguracije vraća praznu listu", async () => {
+    setEnv(undefined, undefined);
+    const content = await import("@/sanity/content");
+    expect(await content.loadSitemapTopics()).toEqual([]);
   });
 });

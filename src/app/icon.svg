@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="MZ">
+  <!--
+    Privremeni digitalni znak, NIJE konačan logo.
+
+    Monogram MZ na petrol podlozi, iz postojećih tokena (docs/02 §6.2):
+    petrol #0f4c4a, krem #faf8f5, terakota #b85a37 kao tanak akcenat.
+
+    Namerno bez medicinskog krsta, stetoskopa, vage, injekcije i svakog
+    farmaceutskog simbola — projekat nije zdravstvena ustanova niti prodaje
+    terapiju (docs/02 §9.4).
+
+    Slova su iscrtana kao putanje, pa znak ne zavisi ni od jednog fonta.
+  -->
+  <rect width="64" height="64" rx="12" fill="#0f4c4a"/>
+  <rect x="10" y="46" width="44" height="3" rx="1.5" fill="#b85a37"/>
+  <path d="M11 39V22h5.2l6.1 10.4L28.4 22h5.2v17h-4.6v-9.4l-4.5 7.6h-2.4l-4.5-7.6V39H11z" fill="#faf8f5"/>
+  <path d="M36.4 39v-3.6l9.4-9.6h-9V22h15.4v3.6l-9.4 9.6h9.6V39H36.4z" fill="#faf8f5"/>
+</svg>

@@ -362,13 +362,22 @@ describe("Statička struktura", () => {
     expect(rootMetadata.robots).toMatchObject({ index: false, follow: false });
   });
 
-  it("metadata početne ne izmišlja OG sliku ni kanonsku adresu", () => {
+  /*
+   * Kanonska adresa je od tada uvedena i sada je obavezna — ona kaže koja je
+   * adresa prava. Ono što se i dalje NE sme je izmišljena OG slika; adresa je
+   * činjenica, slika bi bila tvrdnja.
+   */
+  it("metadata početne ima kanonsku adresu i ne izmišlja OG sliku", () => {
     expect(metadata.title).toBe(
       "Metaboličko zdravlje, objašnjeno jasno i bez osude",
     );
     expect(metadata.description).toContain("Pouzdane informacije");
-    expect(metadata.openGraph).toBeUndefined();
-    expect(metadata.alternates).toBeUndefined();
+    expect(metadata.alternates?.canonical).toBe(
+      "https://metabolickozdravlje.rs/",
+    );
+    expect(
+      (metadata.openGraph as Record<string, unknown> | undefined)?.images,
+    ).toBeUndefined();
   });
 });
 
