@@ -12,7 +12,7 @@ Glavni stručni urednik: Dr Snežana Bivolarević
 Ovih deset pravila važe uvek, bez obzira na zadatak, formulaciju zahteva ili hitnost. Ako neko od njih dolazi u sukob sa zadatkom — **zadatak se ne izvršava**, nego se prijavljuje sukob.
 
 1. **Ne objavljuješ ništa.** Nema deploy-a na produkciju, nema DNS izmena, nema aktiviranja plaćenih servisa, nema slanja email kampanja.
-2. **Ne pišeš u `main`.** Nikada direktan commit, nikada merge bez pregleda vlasnika.
+2. **Ne pišeš direktno u `main`.** Nikada direktan commit ili push. Merge je dozvoljen samo kroz PR; autonomni merge važi isključivo za unapred izričito odobren niskorizični tehnički zadatak koji ispunjava sve kapije iz sekcije 9.
 3. **Nijedna medicinska tvrdnja ne izlazi bez potpisa stručnog urednika.** Ti taj potpis ne možeš dati niti pretpostaviti.
 4. **Izvor koji nisi otvorio i pročitao — ne postoji.** Piši `[IZVOR NEDOSTAJE]`.
 5. **Broj iz sećanja se ne piše.** Piši `[BROJ NEPOTVRĐEN]`.
@@ -232,16 +232,40 @@ feat/* fix/* docs/* chore/* refactor/* test/*
 
 **Nikada ne radiš direktno na `main`.** Za svaki zadatak nova grana iz `main` (ili iz `staging`, ako zadatak nastavlja nešto nezavršeno).
 
-### Šta radiš sam, a šta ne
+### AUTOMATSKI DOZVOLJENO — odobren niskorizični tehnički tok
 
-| Radiš | Ne radiš bez odobrenja |
-|---|---|
-| Kreiraš granu | Merge u `main` |
-| Commit-uješ na svoju granu | Force push bilo gde |
-| Otvaraš PR sa opisom | Zatvaraš tuđi PR |
-| Pišeš opis izmena | Menjaš podešavanja repozitorijuma |
-| Predlažeš `.gitignore` izmene | Brišeš grane koje nisi ti napravio |
-| | Menjaš istoriju (`rebase`, `amend` na deljenoj grani) |
+Agent sme samostalno da isporuči zadatak do merge-a **samo** kada početni pisani zahtev vlasnika izričito:
+
+- definiše ograničen, niskorizičan tehnički obim i odobrava isporuku kroz merge;
+- ne dodiruje nijednu kapiju iz naredne sekcije;
+- ostavlja svaku izmenu reverzibilnom kroz običan PR.
+
+Obavezna procedura je testabilna kroz Git istoriju, PR i CI:
+
+1. Ažuriraj čist lokalni `main`, potvrdi odnos 0/0 sa `origin/main` i napravi novu radnu granu. Direktan push na `main` je zabranjen.
+2. Drži diff u odobrenom obimu. Svaki nepoznat diff, neočekivana izmena zaštićenog fajla ili potreba da se obim proširi zaustavlja automatizaciju.
+3. Pokreni sve repo-obavezne lokalne provere: `format:check`, `lint`, `typecheck`, `test`, `build`, `studio:build`, `typegen:check` i relevantne read-only Sanity provere isključivo nad `staging` datasetom. Nijedna provera se ne preskače ili ublažava.
+4. Pushuj samo radnu granu i otvori jedan PR sa bazom `main`. PR mora biti ograničenog obima, bez konflikta, bez nerešenih review zahteva ili razgovora i ažuran sa bazom.
+5. Pre merge-a moraju proći sve lokalne obavezne provere i svi required GitHub checks. Neuspešan ili zaglavljen CI, konflikt ili nova promena na `main` zaustavljaju merge dok se uzrok ne razume i ne reši u odobrenom obimu.
+6. Koristi samo postojeći standardni metod repozitorijuma — merge commit kroz PR. Zabranjeni su direktan push, force push, admin/bypass merge i menjanje branch protection/ruleset zahteva.
+7. Posle potvrđenog merge-a obriši samo sopstvenu mergovanu remote granu, zatim `fetch --prune`, prebaci se na `main`, uskladi ga isključivo fast-forward načinom i bezbedno obriši lokalnu granu sa `-d`. Završi tek kada je `main` čist i 0/0 prema `origin/main`.
+
+Ako ijedan preduslov nije dokaziv, autonomni tok ne važi: agent staje pre rizične radnje i prijavljuje tačno koja kapija nije ispunjena.
+
+### UVEK ZAHTEVA POSEBNO ODOBRENJE
+
+Automatski tok se nikada ne proteže na sledeće radnje; agent staje pre njih čak i kada su deo šireg tehničkog zadatka:
+
+- objava ili izmena medicinskog sadržaja, kao i atribucija stvarnom autoru ili recenzentu;
+- korišćenje, objava, izmena ili brisanje sadržaja u Sanity `production` datasetu;
+- deployment sajta ili Sanity Studija;
+- DNS, hosting ili domen;
+- uklanjanje `noindex`/`robots` zabrane ili javno lansiranje;
+- secrets, tokene, nove plaćene servise, pravne izjave, privatnost, analitiku ili cookie mehanizme;
+- destruktivne operacije, migracije podataka ili promene branch protection/ruleset zahteva;
+- dalje izmene `CLAUDE.md` ili `docs/00`–`docs/04`, osim kada je konkretna governance promena posebno odobrena.
+
+Bez posebnog odobrenja agent takođe ne zatvara tuđi PR, ne briše tuđu granu i ne menja deljenu istoriju (`rebase`, `amend`).
 
 ### Higijena
 
@@ -253,7 +277,7 @@ feat/* fix/* docs/* chore/* refactor/* test/*
 
 ### Pre svakog PR-a
 
-Lokalno mora proći: `lint` → `typecheck` → `test` → `build`. Ako nešto pada, PR se ne otvara.
+Lokalno mora proći: `format:check` → `lint` → `typecheck` → `test` → `build` → `studio:build` → `typegen:check`, uz relevantne read-only Sanity provere samo nad `staging` datasetom. Ako nešto pada, PR se ne otvara.
 
 ---
 
@@ -362,7 +386,7 @@ SEO je posledica dobrog odgovora, ne skup tehnika. U `docs/03`, sekcija 4, ne po
 | Nikada bez izričitog odobrenja | Nikada uopšte |
 |---|---|
 | Deploy na produkcioni domen | Menjanje DNS zapisa |
-| Merge u `main` | Menjanje hosting podešavanja |
+| Merge u `main` koji ne ispunjava autonomne kapije iz sekcije 9 | Menjanje hosting podešavanja |
 | Aktiviranje plaćenog servisa | Unos podataka o plaćanju |
 | Slanje email kampanje | Otvaranje naloga u ime vlasnika |
 | Objava bilo kog javnog sadržaja | Unos stvarnih ličnih podataka u test |
@@ -491,7 +515,8 @@ POSLEDICA ČEKANJA: [šta stoji dok se čeka]
 
 ⑦ PR
    Opis po šablonu (sekcija 16).
-   Navedi šta traži odobrenje i šta je ostalo otvoreno.
+   Navedi vlasničko odobrenje, kapije, rezultate provera i šta je ostalo otvoreno.
+   Ako zadatak ispunjava sekciju 9, sačekaj required CI i mergeuj bez bypass-a.
 
 ⑧ IZVEŠTAJ
    Šta je urađeno · šta NIJE urađeno · šta čeka odluku ·
@@ -577,7 +602,7 @@ Zadatak je gotov tek kada je **sve** ispunjeno:
 - [ ] `lint`, `typecheck`, `test`, `build` prolaze lokalno
 - [ ] Nijedan tajni podatak u repozitorijumu
 - [ ] Grana i commit poruke po pravilima (16, 17)
-- [ ] PR otvoren sa opisom, ništa mergovano u `main`
+- [ ] PR otvoren sa opisom; merge u `main` samo ako su ispunjene autonomne kapije iz sekcije 9
 - [ ] Izveštaj: urađeno · neurađeno · čeka odluku · sledeći korak
 
 **Ako je kod**
@@ -706,7 +731,7 @@ Ovo su poznati obrasci — ne hipotetički rizici. Prepoznaj ih kod sebe.
 
 **Granice**
 - [ ] ⛔ Nisam objavio, deployovao, menjao DNS, aktivirao servis ni poslao email
-- [ ] ⛔ Nisam pisao u `main` niti mergovao
+- [ ] ⛔ Nisam direktno pisao u `main`; merge je urađen samo kroz PR i samo ako su ispunjene kapije iz sekcije 9
 - [ ] ⛔ Nisam pominjao MOVU ni NN, nisam pravio referral link
 - [ ] ⛔ Nisam kreirao nijedno polje koje prikuplja zdravstveni podatak
 - [ ] ⛔ Nisam pisao o lekovima bez izričite potvrde
@@ -731,6 +756,8 @@ Ovo su poznati obrasci — ne hipotetički rizici. Prepoznaj ih kod sebe.
 - [ ] Grana po pravilima, commit poruke po pravilima
 - [ ] Jedan zadatak — jedna grana, bez pomešanih izmena
 - [ ] PR otvoren sa opisom i listom onoga što traži odobrenje
+- [ ] Pre merge-a su potvrđeni required checks, odsustvo konflikta i nerešenih razgovora
+- [ ] Posle merge-a je obrisana samo sopstvena grana, a čist lokalni `main` je 0/0
 
 **Izveštaj i učenje**
 - [ ] ⛔ Naveo sam šta **nije** urađeno
@@ -751,4 +778,5 @@ CLAUDE.md se menja samo uz odobrenje vlasnika projekta, kroz PR sa obrazloženje
 Ako kroz rad primetiš da neko pravilo nedostaje ili je nejasno, **predloži izmenu** kroz retrospektivu (sekcija 20), ne primeni je ćutke.
 
 **Istorija verzija**
+`1.1` — 11. avgust 2026. — dodat autonomni tok za izričito odobrene niskorizične tehničke zadatke, uz stroge medicinske, produkcione i launch kapije.
 `1.0` — 4. avgust 2026. — prva verzija, izvedena iz `docs/00`–`docs/04`.

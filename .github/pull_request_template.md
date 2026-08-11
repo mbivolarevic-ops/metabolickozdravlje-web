@@ -48,3 +48,7 @@
 - [ ] SEO i metadata posledice su proverene, ili nisu primenljive.
 - [ ] Nije izvršen deployment.
 - [ ] Nisu menjani foundation dokumenti (`docs/`, `CLAUDE.md`) bez izričitog odobrenja.
+- [ ] Ako je korišćen autonomni tok, početni zahtev vlasnika izričito odobrava ovaj ograničeni tehnički obim i merge.
+- [ ] PR ima bazu `main`, nema konflikt, ažuran je i nema nerešenih review zahteva ili razgovora.
+- [ ] Svi required GitHub checks su zeleni; nije korišćen force push, admin bypass niti izmena branch protection/ruleset zahteva.
+- [ ] Posle merge-a briše se samo sopstvena potvrđeno mergovana grana, a lokalni `main` se ff-only usklađuje i potvrđuje kao čist 0/0.
