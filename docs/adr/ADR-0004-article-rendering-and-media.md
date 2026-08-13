@@ -1,6 +1,6 @@
 # ADR-0004 — Prikaz članka: Portable Text, slike i video
 
-**Status:** Predloženo (čeka odobrenje vlasnika kroz PR)
+**Status:** Prihvaćeno (odobrio vlasnik projekta)
 **Datum:** 6. avgust 2026.
 **Kontekst:** Sprint 4 — PR 16 (grana `feat/article-page`)
 
