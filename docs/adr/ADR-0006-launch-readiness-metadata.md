@@ -1,6 +1,6 @@
 # ADR-0006 — Priprema za lansiranje: metapodaci, robots, sitemap i strukturirani podaci
 
-**Status:** Predloženo (čeka odobrenje vlasnika kroz PR)
+**Status:** Prihvaćeno (odobrio vlasnik projekta)
 **Datum:** 7. avgust 2026.
 **Kontekst:** Sprint 6 — PR 18 (grana `feat/launch-readiness-foundation`)
 

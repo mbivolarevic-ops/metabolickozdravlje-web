@@ -1,6 +1,6 @@
 # ADR-0005 — Početna stranica: edukacija i poverenje, ne lead funnel
 
-**Status:** Predloženo (čeka odobrenje vlasnika kroz PR)
+**Status:** Prihvaćeno (odobrio vlasnik projekta)
 **Datum:** 6. avgust 2026.
 **Kontekst:** Sprint 5 — PR 17 (grana `feat/homepage-content`)
 
