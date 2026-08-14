@@ -37,6 +37,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Kapija za produkcione zavisnosti. Pada kada paket koji se ISPORUČUJE
+      # korisniku ima poznatu `high` ili `critical` ranjivost.
+      #
+      # ⛔ `--omit=dev` nije kozmetika. Bez njega ista komanda danas izlazi sa 1,
+      # jer dev stablo (`sanity` → `@sanity/cli`) nosi nalaze koje ne možemo da
+      # zatvorimo — roditelji pinuju tačne verzije. Kapija koja je crvena od
+      # prvog dana se ignoriše, a ignorisana kapija ne štiti ništa.
+      #
+      # Prag je `high` jer je to nivo na kojem zaustavljamo isporuku. Niži
+      # pragovi bi mešali „mora sada" sa „vredi pogledati"; Dependabot i dalje
+      # prijavljuje sve nivoe, uključujući dev-only nalaze.
+      #
+      # Bez `continue-on-error` i bez `|| true`: exit kod je jedini razlog
+      # zbog kojeg ovaj korak postoji. Ne popravlja ništa — samo zaustavlja.
+      - name: Production security audit
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Format
         run: npm run format:check
 
