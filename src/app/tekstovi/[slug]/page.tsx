@@ -5,6 +5,8 @@ import { Container } from "@/components/ui/Container";
 import { Breadcrumbs } from "@/components/content/Breadcrumbs";
 import { ArticleBody } from "@/components/content/ArticleBody";
 import { ArticleImage } from "@/components/content/ArticleImage";
+import { ArticleToc } from "@/components/content/ArticleToc";
+import { collectBodyHeadings } from "@/sanity/headingId";
 import {
   MedicalDisclaimer,
   ReferenceList,
@@ -123,6 +125,13 @@ export default async function ArticlePage({
   // Odsutna i `null` naslovna slika su isto stanje: nema slike.
   const featuredImage = article.featuredImage ?? null;
 
+  /*
+   * Podnaslovi se izvode jednom i dele ih sadržaj članka i samo telo. Da svaki
+   * računa svoje, sidra i linkovi bi mogli da se raziđu — a to se ne vidi kao
+   * greška u buildu nego kao link koji ne vodi nigde.
+   */
+  const headings = collectBodyHeadings(article.body);
+
   const references: ReferenceListItem[] = article.references.map((item) => ({
     label: item.label,
     url: item.url,
@@ -211,8 +220,14 @@ export default async function ArticlePage({
         </div>
       )}
 
+      {/*
+       * Sadržaj članka stoji posle atribucije i naslovne slike, a pre teksta —
+       * mesto ④ iz docs/02 §3.1. Sklopljen je, pa prvi ekran ostaje netaknut.
+       */}
+      <ArticleToc headings={headings} />
+
       <article className="mt-8">
-        <ArticleBody value={article.body} />
+        <ArticleBody value={article.body} headings={headings} />
       </article>
 
       <div className="mt-10 max-w-[var(--container-prose)]">
