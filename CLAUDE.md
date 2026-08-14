@@ -244,7 +244,7 @@ Obavezna procedura je testabilna kroz Git istoriju, PR i CI:
 
 1. Ažuriraj čist lokalni `main`, potvrdi odnos 0/0 sa `origin/main` i napravi novu radnu granu. Direktan push na `main` je zabranjen.
 2. Drži diff u odobrenom obimu. Svaki nepoznat diff, neočekivana izmena zaštićenog fajla ili potreba da se obim proširi zaustavlja automatizaciju.
-3. Pokreni sve repo-obavezne lokalne provere: `format:check`, `lint`, `typecheck`, `test`, `build`, `studio:build`, `typegen:check` i relevantne read-only Sanity provere isključivo nad `staging` datasetom. Nijedna provera se ne preskače ili ublažava.
+3. Pokreni sve repo-obavezne lokalne provere: `npm audit --omit=dev --audit-level=high`, `format:check`, `lint`, `typecheck`, `test`, `build`, `studio:build`, `typegen:check` i relevantne read-only Sanity provere isključivo nad `staging` datasetom. Nijedna provera se ne preskače ili ublažava.
 4. Pushuj samo radnu granu i otvori jedan PR sa bazom `main`. PR mora biti ograničenog obima, bez konflikta, bez nerešenih review zahteva ili razgovora i ažuran sa bazom.
 5. Pre merge-a moraju proći sve lokalne obavezne provere i svi required GitHub checks. Neuspešan ili zaglavljen CI, konflikt ili nova promena na `main` zaustavljaju merge dok se uzrok ne razume i ne reši u odobrenom obimu.
 6. Koristi samo postojeći standardni metod repozitorijuma — merge commit kroz PR. Zabranjeni su direktan push, force push, admin/bypass merge i menjanje branch protection/ruleset zahteva.
@@ -277,7 +277,14 @@ Bez posebnog odobrenja agent takođe ne zatvara tuđi PR, ne briše tuđu granu 
 
 ### Pre svakog PR-a
 
-Lokalno mora proći: `format:check` → `lint` → `typecheck` → `test` → `build` → `studio:build` → `typegen:check`, uz relevantne read-only Sanity provere samo nad `staging` datasetom. Ako nešto pada, PR se ne otvara.
+Lokalno mora proći: `npm audit --omit=dev --audit-level=high` → `format:check` → `lint` → `typecheck` → `test` → `build` → `studio:build` → `typegen:check`, uz relevantne read-only Sanity provere samo nad `staging` datasetom. Ako nešto pada, PR se ne otvara.
+
+**O `npm audit --omit=dev --audit-level=high`.** Ista kapija postoji i u CI-ju, odmah posle `npm ci`; ovde stoji da bi se ranjivost videla pre push-a, a ne tek na GitHub-u.
+
+- `--omit=dev` je svesno sužavanje na **zavisnosti koje se isporučuju korisniku**. Dev alati se ne šalju čitaocu i ne blokiraju isporuku.
+- Nalaz nivoa `high` ili `critical` u produkcionom stablu **zaustavlja isporuku**. PR se ne otvara i merge se ne radi dok se ne razume i ne reši.
+- Komanda je **provera, ne popravka**. `npm audit fix` se ne pokreće — popravka zavisnosti je zasebna, odobrena izmena.
+- Dev-only nalazi ostaju **vidljivi kroz Dependabot** i nisu time zatvoreni ni oprošteni; samo ovom kapijom ne blokiraju isporuku.
 
 ---
 
