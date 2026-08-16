@@ -6,6 +6,7 @@ import { Breadcrumbs } from "@/components/content/Breadcrumbs";
 import { ArticleBody } from "@/components/content/ArticleBody";
 import { ArticleImage } from "@/components/content/ArticleImage";
 import { ArticleToc } from "@/components/content/ArticleToc";
+import { RelatedArticles } from "@/components/content/RelatedArticles";
 import { collectBodyHeadings } from "@/sanity/headingId";
 import {
   MedicalDisclaimer,
@@ -14,7 +15,11 @@ import {
   type ReferenceListItem,
 } from "@/components/medical";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { getArticle, loadArticleSlugs } from "@/sanity/content";
+import {
+  getArticle,
+  getRelatedArticles,
+  loadArticleSlugs,
+} from "@/sanity/content";
 import { canonicalUrl } from "@/site/config";
 import { breadcrumbJsonLd, medicalWebPageJsonLd } from "@/site/jsonLd";
 import {
@@ -132,6 +137,15 @@ export default async function ArticlePage({
    */
   const headings = collectBodyHeadings(article.body);
 
+  /*
+   * Povezani tekstovi iz iste teme. Jedan dohvat po temi — `getRelatedArticles`
+   * ide kroz keširani `getTopicArticleSummaries`, pa nema upita po članku.
+   */
+  const relatedArticles = await getRelatedArticles(
+    article.cluster.slug,
+    article.slug,
+  );
+
   const references: ReferenceListItem[] = article.references.map((item) => ({
     label: item.label,
     url: item.url,
@@ -237,6 +251,13 @@ export default async function ArticlePage({
       <div className="mt-10 max-w-[var(--container-prose)]">
         <ReferenceList references={references} />
       </div>
+
+      {/*
+       * Povezani tekstovi stoje posle izvora, a pre veze nazad na temu: to je
+       * sledeći korak u čitanju, dok „Nazad na temu“ ostaje izlaz iz teksta.
+       * Kada tema nema drugih tekstova, blok se uopšte ne prikazuje.
+       */}
+      <RelatedArticles articles={relatedArticles} />
 
       <p className="mt-10 text-sm">
         <Link href={`/teme/${article.cluster.slug}`}>

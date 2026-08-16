@@ -24,6 +24,9 @@ vi.mock("@/sanity/content", () => ({
   getArticle: (slug: string) => getArticle(slug),
   loadTopicSlugs: () => loadTopicSlugs(),
   loadArticleSlugs: () => loadArticleSlugs(),
+  // Povezani tekstovi se testiraju u `related-articles.test.tsx`; ovde su
+  // prazni, pa se blok ne renderuje i ne meša u provere metapodataka.
+  getRelatedArticles: () => Promise.resolve([]),
 }));
 
 vi.mock("@/sanity/env", () => ({
