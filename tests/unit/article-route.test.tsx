@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Offline testovi rute `/tekstovi/[slug]`.
@@ -10,10 +10,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const getArticle = vi.fn();
 const loadArticleSlugs = vi.fn();
+const getRelatedArticles = vi.fn();
 
 vi.mock("@/sanity/content", () => ({
   getArticle: (slug: string) => getArticle(slug),
   loadArticleSlugs: () => loadArticleSlugs(),
+  getRelatedArticles: (cluster: string, slug: string) =>
+    getRelatedArticles(cluster, slug),
 }));
 
 vi.mock("@/sanity/env", () => ({
@@ -89,6 +92,15 @@ const ARTICLE = {
 function params(slug: string) {
   return { params: Promise.resolve({ slug }) };
 }
+
+/*
+ * Povezani tekstovi se u ovom fajlu ne testiraju — za njih postoji
+ * `related-articles.test.tsx`. Ovde je podrazumevano prazna lista, pa se blok
+ * ne renderuje i ne meša u provere ostalih elemenata stranice.
+ */
+beforeEach(() => {
+  getRelatedArticles.mockResolvedValue([]);
+});
 
 afterEach(() => {
   vi.clearAllMocks();

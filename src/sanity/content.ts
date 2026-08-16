@@ -132,6 +132,39 @@ export async function loadHomepageArticles(
 }
 
 /**
+ * Povezani tekstovi iz iste teme — najviše tri (docs/02 §3.1, element ⑮).
+ *
+ * Bez novog upita i bez preporuka. Koristi se postojeći
+ * `loadTopicArticleSummaries`, pa povezani tekstovi prolaze KROZ ISTU kapiju
+ * kao i lista na stranici teme: isti filter objavljivosti u upitu i isti
+ * `isValidArticleSummary` posle njega. Druga lista sa sopstvenim uslovom bila
+ * bi drugo mesto na kojem se pravilo može razići.
+ *
+ * Redosled je onaj iz upita — `reviewDate desc` — i ovde se NE menja. Isti
+ * razlog kao kod početne: sortiranje na dva mesta se pre ili kasnije raziđe.
+ *
+ * Zašto se dohvata cela tema pa se seče ovde, umesto `[0...3]` u upitu:
+ * `isValidArticleSummary` odbacuje zapise POSLE upita. Da je upit uzeo tačno
+ * tri, jedan odbačen ostavio bi rupu — dva prikazana teksta iako tema ima pet
+ * ispravnih. Tema je po `docs/02` §4.5 „kompletna“ pri 6–8 tekstova, pa je
+ * dohvat ograničen svojom prirodom. Isti razlog stoji i u komentaru uz
+ * `articlesByClusterQuery`.
+ */
+export const RELATED_ARTICLE_LIMIT = 3;
+
+export async function loadRelatedArticles(
+  clusterSlug: string,
+  currentSlug: string,
+  fetcher?: SanityFetcher,
+): Promise<ValidArticleSummary[]> {
+  const summaries = await loadTopicArticleSummaries(clusterSlug, fetcher);
+
+  return summaries
+    .filter((article) => article.slug !== currentSlug)
+    .slice(0, RELATED_ARTICLE_LIMIT);
+}
+
+/**
  * Adresa i datum poslednje izmene — sve što sitemap-u treba.
  *
  * `lastModified` je `null` kada CMS podatak nije upotrebljiv. Datum se tada
@@ -288,6 +321,21 @@ export const getTopicArticleSummaries = cache((slug: string) =>
 );
 export const getArticle = cache((slug: string) => loadArticle(slug));
 export const getHomepageArticles = cache(() => loadHomepageArticles());
+
+/*
+ * Povezani tekstovi idu kroz keširani `getTopicArticleSummaries`, pa stranica
+ * članka i ovaj poziv dele JEDAN dohvat po temi u istom renderu. Nema upita po
+ * povezanom članku — dakle nema N+1.
+ */
+export const getRelatedArticles = cache(
+  async (clusterSlug: string, currentSlug: string) => {
+    const summaries = await getTopicArticleSummaries(clusterSlug);
+
+    return summaries
+      .filter((article) => article.slug !== currentSlug)
+      .slice(0, RELATED_ARTICLE_LIMIT);
+  },
+);
 
 export type {
   ValidArticleSummary,
