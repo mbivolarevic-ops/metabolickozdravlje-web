@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { CtaLink } from "@/components/ui/CtaLink";
 import { getTopics } from "@/sanity/content";
 import { canonicalUrl } from "@/site/config";
 
@@ -45,9 +46,25 @@ export default async function TopicsPage() {
          * NIKADA se ne prikazuje kada upit padne — takva greška se propagira
          * i obara build, umesto da se objavi prazan sajt kao ispravan.
          */
-        <p className="mt-8 max-w-[var(--container-prose)]">
-          Teme se pripremaju. Sadržaj još nije objavljen — vratite se kasnije.
-        </p>
+        <>
+          <p className="mt-8 max-w-[var(--container-prose)]">
+            Teme se pripremaju. Sadržaj još nije objavljen — vratite se kasnije.
+          </p>
+
+          {/*
+           * Izlaz iz praznog stanja. Bez njega je ovo slepa ulica: u glavnom
+           * sadržaju nema nijednog linka, pa jedini put dalje vodi kroz
+           * zaglavlje ili dugme „nazad“.
+           *
+           * Prikazuje se ISKLJUČIVO kada tema nema. Kada teme postoje, svaka je
+           * već svoj sledeći korak i povratni link bi bio šum.
+           */}
+          <p className="mt-8">
+            <CtaLink href="/" variant="secondary">
+              Nazad na početnu
+            </CtaLink>
+          </p>
+        </>
       ) : (
         <ul className="mt-8 grid list-none gap-4 sm:grid-cols-2">
           {topics.map((topic) => (

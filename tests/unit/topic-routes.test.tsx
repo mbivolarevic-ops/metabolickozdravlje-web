@@ -82,6 +82,45 @@ describe("/teme", () => {
     expect(screen.getByText(/još nije objavljen/)).toBeInTheDocument();
   });
 
+  /*
+   * Bez ovog linka prazno stanje je slepa ulica: u glavnom sadržaju nema
+   * nijednog odredišta, pa jedini put dalje vodi kroz zaglavlje.
+   */
+  it("prazno stanje nudi eksplicitan izlaz na početnu", async () => {
+    getTopics.mockResolvedValue([]);
+    render(await TopicsPage());
+
+    expect(
+      screen.getByRole("link", { name: "Nazad na početnu" }),
+    ).toHaveAttribute("href", "/");
+  });
+
+  it("prazno stanje zadržava poruku da se teme pripremaju", async () => {
+    getTopics.mockResolvedValue([]);
+    render(await TopicsPage());
+
+    expect(screen.getByText(/Teme se pripremaju/)).toBeInTheDocument();
+  });
+
+  it("kada teme postoje, povratni link se NE prikazuje", async () => {
+    getTopics.mockResolvedValue([TOPIC]);
+    render(await TopicsPage());
+
+    // Svaka tema je već svoj sledeći korak; povratni link bi bio šum.
+    expect(screen.queryByRole("link", { name: "Nazad na početnu" })).toBeNull();
+    expect(screen.queryByText(/Teme se pripremaju/)).toBeNull();
+  });
+
+  it("kada teme postoje, jedini linkovi vode na same teme", async () => {
+    getTopics.mockResolvedValue([TOPIC]);
+    const { container } = render(await TopicsPage());
+
+    const hrefs = [...container.querySelectorAll("a")].map((a) =>
+      a.getAttribute("href"),
+    );
+    expect(hrefs).toEqual(["/teme/test-tema"]);
+  });
+
   it("21 — validne teme imaju tačne linkove", async () => {
     getTopics.mockResolvedValue([TOPIC]);
     render(await TopicsPage());
