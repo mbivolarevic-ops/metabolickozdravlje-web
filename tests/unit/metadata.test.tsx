@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -215,11 +216,29 @@ describe("Globalna 404 i nasleđeni metapodaci", () => {
     expect(nasledjeno.robots).toMatchObject({ index: false, follow: false });
   });
 
-  it("stranica 404 ne izvozi sopstvenu kanonsku adresu", async () => {
+  /*
+   * Ranije je ovaj test tražio da 404 UOPŠTE nema `metadata` izvoz. To je bio
+   * posredan način da se proveri ono što zaista treba braniti — odsustvo
+   * kanonske adrese. Sada stranica ima naslov, pa se proverava sama namera:
+   * naslov sme, canonical i `og:url` ne smeju.
+   */
+  it("stranica 404 ima sopstveni naslov, ali ne i kanonsku adresu", async () => {
     const modul: Record<string, unknown> = await import("@/app/not-found");
+    const notFoundMetadata = modul.metadata as Metadata | undefined;
 
-    expect(modul.metadata).toBeUndefined();
+    expect(notFoundMetadata?.title).toBe("Stranica nije pronađena");
+    expect(notFoundMetadata?.alternates).toBeUndefined();
+    expect(notFoundMetadata?.openGraph).toBeUndefined();
     expect(modul.generateMetadata).toBeUndefined();
+  });
+
+  it("naslov 404 stranice ne poništava globalni noindex", async () => {
+    const modul: Record<string, unknown> = await import("@/app/not-found");
+    const notFoundMetadata = modul.metadata as Metadata | undefined;
+
+    // Robots ostaje nasleđen iz root layout-a; 404 ga ne dira.
+    expect(notFoundMetadata?.robots).toBeUndefined();
+    expect(nasledjeno.robots).toMatchObject({ index: false, follow: false });
   });
 });
 

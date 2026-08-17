@@ -134,6 +134,11 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+/** Uklanja komentare, da provera nad izvorom ne bi pogodila prozu o kodu. */
+function bezKomentara(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+}
+
 describe("Globalna 404 stranica", () => {
   it("jasno kaže da stranica nije pronađena", () => {
     const { container } = render(<NotFound />);
@@ -176,6 +181,39 @@ describe("Globalna 404 stranica", () => {
     for (const leak of ["Sanity", "GROQ", "dataset", "undefined", "404"]) {
       expect(container.textContent).not.toContain(leak);
     }
+  });
+
+  /*
+   * Bez sopstvenog naslova tab nasleđuje naslov početne strane, pa istorija
+   * brauzera tvrdi da je korisnik bio na početnoj — a nije.
+   */
+  it("ima sopstveni naslov dokumenta na srpskom", async () => {
+    const modul: Record<string, unknown> = await import("@/app/not-found");
+    const notFoundMetadata = modul.metadata as { title?: unknown } | undefined;
+
+    expect(notFoundMetadata?.title).toBe("Stranica nije pronađena");
+  });
+
+  /*
+   * Provera mora da gleda KOD, ne komentare: `not-found.tsx` u dokumentaciji
+   * objašnjava zašto `<title>` nije upotrebljen, pa bi pretraga po celom fajlu
+   * pogodila sopstveno objašnjenje.
+   */
+  it("naslov se postavlja metapodacima, ne React elementom `title`", async () => {
+    const code = bezKomentara(await readFile("src/app/not-found.tsx", "utf8"));
+
+    /*
+     * React `<title>` je ovde probano i ne radi: Next iz globalnog metadata već
+     * emituje `<title>` ranije u dokumentu, brauzer koristi PRVI, a hidratacija
+     * doda još jedan. Ako neko kasnije vrati taj pristup, ovaj test pada.
+     */
+    expect(code).not.toContain("<title>");
+    expect(code).toContain("export const metadata");
+  });
+
+  it("nije klijentska komponenta", async () => {
+    const code = bezKomentara(await readFile("src/app/not-found.tsx", "utf8"));
+    expect(code).not.toContain("use client");
   });
 
   it("specifične 404 stranice zadržavaju svoje poruke", () => {
