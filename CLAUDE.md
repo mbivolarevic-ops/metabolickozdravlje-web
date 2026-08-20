@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 **Operativni priručnik za Claude agente na projektu metabolickozdravlje.rs**
-**Verzija 1.0** · Organizacija: Edukativni studio — Centar za metaboličko zdravlje (CMZ)
+**Verzija 1.2** · Organizacija: Edukativni studio — Centar za metaboličko zdravlje (CMZ)
 Vlasnik projekta i operativni urednik sadržaja: vlasnik repozitorijuma
 Glavni stručni urednik: Dr Snežana Bivolarević
 
@@ -60,7 +60,7 @@ Drugi deo rečenice je teži i on određuje tvoj rad. Sajt koji preporučuju lek
 | Da poverenje raste 5 godina | Jedna loša odluka pod rokom vredi više od sto dobrih |
 | Da sadržaj bude tačan i za 5 godina | Piši mehanizme i principe, ne trendove |
 
-**Kako izgleda propast** (iskrenije merilo od ciljeva): objavimo nešto što nekoga navede da odloži lekara · sadržaj postane neraspoznatljiv od onog koji prodaje · komercijalna veza se otkrije a nismo je sami obelodanili · ime Dr Snežane se pojavi uz proizvod · prestanemo da priznajemo kada nešto ne znamo.
+**Kako izgleda propast** (iskrenije merilo od ciljeva): objavimo nešto što nekoga navede da odloži lekara · sadržaj postane neraspoznatljiv od onog koji prodaje · komercijalna veza se otkrije a nismo je sami obelodanili · ime Dr Snežane se pojavi uz proizvod treće strane · prestanemo da priznajemo kada nešto ne znamo.
 
 Nijedna od tih propasti ne dolazi odjednom. Sve dolaze kroz niz malih ustupaka, obično pod rokom. Ti si često onaj ko taj prvi mali ustupak može da spreči.
 
@@ -76,16 +76,20 @@ Znaj **u kojoj smo fazi**, jer to određuje šta je danas zabranjeno — ne zato
 |---|---|---|---|
 | **v1** | 0–6 meseci | Autoritet: 2 kompletna klastera, sistem poverenja, tehnički temelj, prvi vodič | 3.000+ organskih sesija, 300+ potvrđenih pretplatnika, nula pravnih problema |
 | **v2** | 6–12 meseci | Angažman: kviz, još 2 klastera, klaster „Ponašanje i navike", newsletter, noćni režim, audio verzije | 10.000+ sesija, 1.500+ pretplatnika, stopa povratka 20%+ |
-| **v3** | 12–18 meseci | Ekosistem: GLP-1 klaster (uz pravni pregled), prve referral aktivacije, video/audio sa Dr Snežanom, sadržaj za struku | 25.000+ sesija, prepoznatljivost u niši, održiv model |
+| **v3** | 12–18 meseci | Ekosistem: GLP-1 klaster (uz pravni pregled), video/audio sa Dr Snežanom, sadržaj za struku, B2B programi i sponzorstva po ADR-0008 | 25.000+ sesija, prepoznatljivost u niši, održiv model |
 | **v4** | 18–24 meseca | Alat: opcioni nalog (bez zdravstvenih podataka), priprema za konsultaciju, regionalno proširenje | Novi pravni pregled pre ulaska |
 
 ### ⛔ Trenutna faza: v1
 
-**Ne gradiš, ne pominješ i ne pripremaš kao aktivno:** kviz · GLP-1 sadržaj · bilo koji referral link · MOVU · NN · plaćene kampanje · masovnu produkciju članaka · ćirilicu · korisničke naloge · video.
+**Ne gradiš, ne pominješ i ne pripremaš kao aktivno:** kviz · GLP-1 sadržaj · bilo koji referral link · MOVU · NN · masovnu produkciju članaka · ćirilicu · korisničke naloge · video.
 
-Za referral gradiš **samo infrastrukturu koja je podrazumevano isključena** (`docs/01`, sekcija 12). Za kviz gradiš samo ono što `docs/01` sekcija 11 dozvoljava kao pripremu.
+Za kviz gradiš samo ono što `docs/01` sekcija 11 dozvoljava kao pripremu. **Referral infrastruktura se više ne gradi ni isključena** — model je trajno napušten (ADR-0008), pa `docs/01` sekcija 12 i `src/components/referral/` ostaju mrtav kod dok vlasnik ne odluči o uklanjanju.
 
-**Nikada ne planira se ni u jednoj verziji:** prodaja proizvoda na platformi · zakazivanje pregleda · telemedicina · funkcija koja daje individualnu medicinsku procenu · reklame trećih strana · prodaja korisničkih podataka.
+**Plaćene kampanje su planirane, ali ne i odobrene za izvođenje** (`docs/05`, sekcije 5 i 8). Ne pokrećeš ih, ne dodaješ pixel ni conversion tracking, i ne pišeš marketinšku medicinsku tvrdnju bez recenzenta.
+
+**Nikada ne planira se ni u jednoj verziji:** zakazivanje pregleda · telemedicina · funkcija koja daje individualnu medicinsku procenu ili trijažu · reklame trećih strana i oglasi za suplemente · prodaja korisničkih podataka i leadova · referral model bilo kog oblika.
+
+**Prodaja je odobrena, u tačno određenom obimu** (ADR-0008, `docs/05`): **jedan** digitalni vodič po 1.999 RSD, dobrovoljni newsletter sa zasebnom neoznačenom saglasnošću, B2B Patient Support programi i označeni sponzorisani projekti. Drugi proizvod, checkout, forma, analitika i pravni tekstovi traže **zasebno odobrenje** — ADR-0008 ih ne otvara.
 
 Puna verzija: `docs/02`, sekcija 10.
 
@@ -162,6 +166,7 @@ docs/01-DISCOVERY-AND-ARCHITECTURE.md    ← tehnička arhitektura
 docs/02-PRODUCT-AND-UX-BLUEPRINT.md      ← proizvod i UX
 docs/03-CONTENT-OPERATING-SYSTEM.md      ← proizvodnja sadržaja
 docs/04-HEALTH-LITERACY-...md            ← razumljivost
+docs/05-commercial-and-marketing-strategy.md  ← komercijalni model
      ↓
 CLAUDE.md (ovaj fajl)                    ← kako ti radiš
 ```
@@ -212,6 +217,7 @@ Zatim po tipu zadatka:
 | Referral (faza 3) | `00` + `01` | 00/12–13, 01/12 |
 | Analytics | `01` + `04` | 01/13, 04/11 |
 | Pravno, compliance, privatnost | `00` + `01` | 00/13, 01/14 |
+| Prodaja, newsletter, sponzorstva, marketing | `05` + ADR-0008 | 05/1–10 |
 | Deployment | `01` | 15, 16 |
 
 **Ne čitaj sve svaki put.** Čitaj ustav uvek, pa ciljano. Ali ako si u dugoj sesiji i osećaš da si izgubio kontekst — **vrati se na ustav.**
@@ -261,7 +267,8 @@ Automatski tok se nikada ne proteže na sledeće radnje; agent staje pre njih č
 - deployment sajta ili Sanity Studija;
 - DNS, hosting ili domen;
 - uklanjanje `noindex`/`robots` zabrane ili javno lansiranje;
-- secrets, tokene, nove plaćene servise, pravne izjave, privatnost, analitiku ili cookie mehanizme;
+- secrets, tokene, nove plaćene servise, pravne izjave, privatnost, analitiku, cookie mehanizme ili advertising pixele;
+- bilo koji komercijalni element iz ADR-0008: naplatu, checkout, cenu, newsletter formu, saglasnost, B2B ponudu ili oznaku sponzorstva;
 - destruktivne operacije, migracije podataka ili promene branch protection/ruleset zahteva;
 - dalje izmene `CLAUDE.md` ili `docs/00`–`docs/04`, osim kada je konkretna governance promena posebno odobrena.
 
@@ -459,7 +466,10 @@ Implementacija u okviru arhitekture iz `docs/01` · struktura teksta u okviru `d
 7. Novi analytics događaj koji nosi kontekst sadržaja.
 8. Novi spoljni servis, integracija ili zavisnost koja šalje podatke.
 9. Objava, deploy, email, DNS, plaćeni servis.
-10. Kada zadatak deluje kao da je u sukobu sa ustavom — čak i ako nisi siguran.
+10. **Bilo koji komercijalni element** (ADR-0008): checkout, naplata, cena, newsletter forma, saglasnost, kupovni tok, B2B ponuda ili oznaka sponzorstva.
+11. **Marketinška tvrdnja koja dodiruje zdravstveni ishod** — ista provera kao za članak: imenovan autor i recenzent.
+12. **Javna atribucija institucionalnog recenzenta** (npr. ALMA) — traži dokumentovanu saglasnost i ime odgovorne osobe.
+13. Kada zadatak deluje kao da je u sukobu sa ustavom — čak i ako nisi siguran.
 
 **Format:**
 
@@ -785,5 +795,6 @@ CLAUDE.md se menja samo uz odobrenje vlasnika projekta, kroz PR sa obrazloženje
 Ako kroz rad primetiš da neko pravilo nedostaje ili je nejasno, **predloži izmenu** kroz retrospektivu (sekcija 20), ne primeni je ćutke.
 
 **Istorija verzija**
+`1.2` — 17. avgust 2026. — projekat dobija prihod: jedan digitalni vodič, dobrovoljni newsletter, B2B programi i označena sponzorstva (ADR-0008, `docs/05`). Referral model trajno isključen. Medicinske, privacy, payment i launch kapije nepromenjene.
 `1.1` — 11. avgust 2026. — dodat autonomni tok za izričito odobrene niskorizične tehničke zadatke, uz stroge medicinske, produkcione i launch kapije.
 `1.0` — 4. avgust 2026. — prva verzija, izvedena iz `docs/00`–`docs/04`.

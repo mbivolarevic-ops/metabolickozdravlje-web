@@ -216,22 +216,24 @@ Planiramo u godinama, ne u kvartalima. Sadržaj koji pišemo danas treba da bude
 
 Odnos prema novcu je najosetljivije mesto u celoj strategiji, pa se definiše unapred, dok nema pritiska.
 
+> **Izmenjeno odlukom vlasnika, avgust 2026.** Prvobitni redosled je predviđao
+> prvih dvanaest meseci bez ikakve monetizacije, a zatim referral linkove.
+> Vlasnik je doneo drugačiju odluku: prihod počinje ranije, referral nikada.
+> Merodavni su [ADR-0008](adr/ADR-0008-ethical-commerce-consent-and-sponsorship.md)
+> i `docs/05`.
+
 ```
-FAZA 1 (0–12 meseci)     Bez ikakve monetizacije.
-                          Odsustvo komercijalnog interesa je aktivan
-                          signal poverenja i koristi se dok traje.
+OD POČETKA              Jedan digitalni vodič (1.999 RSD), dobrovoljni
+                          newsletter, B2B Patient Support programi i
+                          označeni sponzorisani projekti — svaki pod
+                          kapijama iz ADR-0008.
         ↓
-FAZA 2 (12–24 meseca)     Prvi transparentno označeni referral linkovi.
-                          Uvode se tek pošto je objašnjenje objavljeno
-                          NA STRANICI TRANSPARENTNOSTI PRE nego što se
-                          prvi link pojavi.
-        ↓
-FAZA 3 (24+ meseci)       Održivi modeli koji ne ugrožavaju nezavisnost:
+DALJE                   Održivi modeli koji ne ugrožavaju nezavisnost:
                           edukativni programi, saradnje sa institucijama,
                           stručni sadržaj.
 ```
 
-**Zauvek isključeno:** reklame trećih strana, prodaja korisničkih podataka, plaćeni sadržaj bez oznake, bilo kakva naknada uslovljena preporukom određenog proizvoda, uslovljavanje pristupa sadržaju plaćanjem kada je reč o zdravstveno važnoj informaciji.
+**Zauvek isključeno — bez izuzetka i bez odobrenja:** referral linkovi bilo kog oblika (uključujući MOVU i NN), prodaja leadova, reklame trećih strana i oglasi za suplemente, prodaja korisničkih podataka, plaćeni sadržaj bez oznake, bilo kakva naknada uslovljena preporukom određenog proizvoda, uslovljavanje pristupa sadržaju plaćanjem kada je reč o zdravstveno važnoj informaciji.
 
 ### 4.5 Rizici od kojih strategija propada
 
@@ -491,9 +493,9 @@ Formulacija koja se predlaže: *„U pripremi i uređivanju tekstova koristimo i
 15. **Pomenuti zaštićeno ime leka u kontekstu koji podstiče upotrebu, nabavku ili traženje od lekara.**
 16. **Napisati sadržaj o lekovima na recept koji bi mogao biti protumačen kao oglašavanje opštoj javnosti.** Detalji u sekciji 13.
 17. **Navesti cenu, dostupnost ili način nabavke bilo kog leka.**
-18. **Povezati ime Dr Snežane ili CMZ sa bilo kojim proizvodom.**
+18. **Povezati ime Dr Snežane ili CMZ sa proizvodom treće strane.** Sopstveni edukativni vodič CMZ-a, čiji je ona imenovani autor, izuzet je i uređen [ADR-0008](adr/ADR-0008-ethical-commerce-consent-and-sponsorship.md) — uz nepromenjenu obavezu imenovanog recenzenta. Suplementi, lekovi i tuđi proizvodi ostaju zabranjeni bez izuzetka.
 19. **Napisati da suplement leči, sprečava ili ublažava bolest.**
-20. **Kreirati referral link, aktivirati destinaciju ili pomenuti MOVU ili NN** bez izričitog pisanog odobrenja vlasnika projekta za taj konkretan slučaj.
+20. **Kreirati referral link, aktivirati destinaciju ili pomenuti MOVU ili NN.** Odlukom vlasnika iz avgusta 2026. referral model je **trajno isključen** — više ne postoji ni put kojim bi bio odobren (ADR-0008, §4.4).
 
 ### 8.4 Podaci i privatnost
 

@@ -789,6 +789,13 @@ Kviz je najbolji mehanizam za razvrstavanje prometa po segmentu bez postavljanja
 
 ## 12. Referral model
 
+> ⛔ **Trajno napušteno, odlukom vlasnika iz avgusta 2026.**
+> Referral model bilo kog oblika — uključujući MOVU i NN — više se ne planira ni
+> u jednoj verziji ([ADR-0008](adr/ADR-0008-ethical-commerce-consent-and-sponsorship.md),
+> `docs/00` §4.4). Cela sekcija ispod ostaje kao istorijski zapis; ništa iz nje se
+> ne gradi, ne aktivira i ne priprema. `src/components/referral/` ostaje mrtav kod
+> dok vlasnik ne odluči o uklanjanju.
+
 ### 12.1 Stanje u fazi 1
 
 **Nema aktivnih referral linkova. Nema pominjanja MOVU. Nema pominjanja NN.** Gradi se isključivo infrastruktura koja kasnije može primiti destinaciju, uz mogućnost trenutnog isključivanja.

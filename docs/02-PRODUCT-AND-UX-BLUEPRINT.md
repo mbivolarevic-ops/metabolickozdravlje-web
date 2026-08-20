@@ -99,7 +99,7 @@ Svaki činilac ima svoju UX implementaciju:
 | **Kompetentnost** | Dr Snežana sa punom titulom i 40 godina iskustva, vidljivo pri vrhu članka; izvori uz svaku tvrdnju; precizna terminologija bez pojednostavljivanja do netačnosti |
 | **Transparentnost** | Datum poslednje provere na svakoj stranici; navedeni izvori; otvoreno priznata nesigurnost; jasno rečeno ko finansira platformu (kada se pravno definiše) |
 | **Doslednost** | Isti ton na svakoj stranici; ista struktura svakog članka; nikada iznenadni prodajni obrt |
-| **Nizak lični interes** | Jedini CTA u fazi 1 je besplatan vodič; nema prodaje, nema linkova ka proizvodima, nema reklama. Odsustvo monetizacije je **aktivan** signal poverenja i treba ga koristiti dok traje. |
+| **Nizak lični interes** | Nema linkova ka proizvodima trećih strana, nema reklama, nema referrala. Od avgusta 2026. platforma prodaje jedan sopstveni vodič (ADR-0008), pa se odsustvo monetizacije više ne može koristiti kao signal — poverenje se brani transparentnošću i time što zdravstveno važna informacija ostaje besplatna. |
 
 Poslednja stavka je razlog zbog kojeg je odlaganje referral sistema strateška prednost, a ne odricanje. Prvih 12 meseci bez ijednog komercijalnog linka gradi kapital poverenja koji se kasnije može, oprezno i transparentno, delimično koristiti. Obrnutim redosledom se ne može ništa.
 
@@ -552,6 +552,17 @@ Klaster se smatra „kompletnim" pri 6–8 potpornih tekstova + pillar + 8–12 
 ---
 
 ## 5. Lead Funnel UX
+
+> **Izmenjeno odlukom vlasnika, avgust 2026.** Cela ova sekcija je pisana dok je
+> vodič bio **besplatan lead magnet**. Flagship vodič se sada **prodaje po
+> 1.999 RSD** ([ADR-0008](adr/ADR-0008-ethical-commerce-consent-and-sponsorship.md),
+> `docs/05`), pa svako mesto koje ispod kaže „besplatno“ opisuje staro stanje.
+>
+> Šta ostaje na snazi: filozofija razmene (5.1), pravilo da ponuda dolazi **posle**
+> dokazane vrednosti, i to da se saglasnost traži pošteno. Šta više ne važi:
+> formulacija „Preuzmite besplatno“ i pretpostavka da je jedina konverzija
+> preuzimanje. Newsletter je od sada **odvojen** od kupovine i nikada nije njena
+> posledica.
 
 ### 5.1 Filozofija razmene
 
@@ -1087,7 +1098,14 @@ Dve godine, četiri verzije. Svaka verzija ima jedno pitanje na koje odgovara i 
 
 ### Šta se ne planira ni u jednoj verziji
 
-Prodaja proizvoda direktno na platformi. Zakazivanje pregleda. Telemedicina. Bilo kakva funkcija koja daje individualnu medicinsku procenu. Reklame trećih strana. Prodaja ili ustupanje korisničkih podataka.
+Zakazivanje pregleda. Telemedicina. Bilo kakva funkcija koja daje individualnu medicinsku procenu ili trijažu. Reklame trećih strana i oglasi za suplemente. Prodaja ili ustupanje korisničkih podataka. Referral model bilo kog oblika.
+
+> **Izmenjeno odlukom vlasnika, avgust 2026.** Sa ove liste je uklonjena „prodaja
+> proizvoda direktno na platformi“: projekat prodaje **jedan** digitalni vodič, uz
+> dobrovoljni newsletter, B2B programe i označena sponzorstva. Uslovi su u
+> [ADR-0008](adr/ADR-0008-ethical-commerce-consent-and-sponsorship.md) i `docs/05`.
+> Sve ostalo sa liste ostaje isključeno, a referral je istom odlukom **dodat** kao
+> trajno isključen.
 
 Ove granice su deo identiteta, ne privremeno ograničenje.
 
