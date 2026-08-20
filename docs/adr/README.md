@@ -16,6 +16,7 @@ Svaka odluka dobija svoj poseban dokument, imenovan po obrascu
 | [ADR-0005](ADR-0005-homepage-content-strategy.md) | Početna stranica: edukacija i poverenje, ne lead funnel |
 | [ADR-0006](ADR-0006-launch-readiness-metadata.md) | Priprema za lansiranje: metapodaci, robots, sitemap i strukturirani podaci |
 | [ADR-0007](ADR-0007-automated-delivery-guardrails.md) | Automatizovana isporuka uz bezbednosne kapije |
+| [ADR-0008](ADR-0008-ethical-commerce-consent-and-sponsorship.md) | Etička prodaja, saglasnost i sponzorstva |
 
 Status i datum svake odluke stoje u samom dokumentu i namerno se ne ponavljaju
 ovde — indeks koji nosi kopiju statusa zastari čim se dokument promeni, a

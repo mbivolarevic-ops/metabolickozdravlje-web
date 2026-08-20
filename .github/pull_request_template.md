@@ -45,6 +45,12 @@
 - [ ] Testovi prolaze lokalno.
 - [ ] Production `build` prolazi lokalno.
 - [ ] Medicinske tvrdnje su proverene, ili promena ne sadrži medicinski sadržaj.
+- [ ] Ako promena dodiruje prodaju, cenu, naplatu, newsletter ili sponzorstvo: postoji odobrenje po ADR-0008, a pravni i privacy pregled su obavljeni ili izričito nisu potrebni.
+- [ ] Saglasnost je zasebna i neoznačena; kupac se ne prijavljuje automatski; transakcijska i marketinška komunikacija su odvojene — ili promena ne dodiruje saglasnost.
+- [ ] Nijedno polje ne prikuplja zdravstveni podatak, uključujući polja označena kao „opciono“.
+- [ ] Marketinška tvrdnja koja dodiruje zdravstveni ishod ima imenovanog autora i recenzenta, ili je nema.
+- [ ] Institucionalni recenzent (npr. ALMA) se ne pominje bez dokumentovane saglasnosti i imena odgovorne osobe.
+- [ ] Nisu dodati analytics, cookies, advertising pixels, payment secrets ni novi servis bez zasebnog odobrenja.
 - [ ] SEO i metadata posledice su proverene, ili nisu primenljive.
 - [ ] Nije izvršen deployment.
 - [ ] Nisu menjani foundation dokumenti (`docs/`, `CLAUDE.md`) bez izričitog odobrenja.
