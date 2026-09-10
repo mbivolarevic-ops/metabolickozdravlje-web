@@ -60,8 +60,24 @@ describe("Okvir sajta (layout chrome)", () => {
     const hrefs = Array.from(container.querySelectorAll("a")).map((a) =>
       a.getAttribute("href"),
     );
-    // Rute koje stvarno postoje: početna, `/teme` i skip-link.
-    const allowed = new Set(["/", "/teme", "#glavni-sadrzaj"]);
+    /*
+     * Rute koje stvarno postoje, plus skip-link. Lista se proširuje samo kada
+     * u `src/app/` postoji odgovarajuća stranica.
+     *
+     * `/partner-preview` NIJE ovde namerno: to je privatna prezentaciona
+     * stranica kojoj se pristupa direktnim URL-om, pa u zaglavlju i podnožju
+     * ne sme da se pojavi. Da se pojavi, ovaj test pada — i to je poenta.
+     */
+    const allowed = new Set([
+      "/",
+      "/teme",
+      "/o-nama",
+      "/autor",
+      "/medicinska-recenzija",
+      "/uredjivacka-politika",
+      "/vodic/metabolicko-zdravlje",
+      "#glavni-sadrzaj",
+    ]);
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
       expect(allowed.has(href ?? "")).toBe(true);

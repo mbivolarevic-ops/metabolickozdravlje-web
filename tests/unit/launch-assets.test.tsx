@@ -115,8 +115,25 @@ const ARTICLE = {
   ],
 };
 
-/** Rute koje projekat stvarno ima. Sve ostalo je mrtav link. */
-const POSTOJECE_RUTE = new Set(["/", "/teme"]);
+/**
+ * Rute koje projekat stvarno ima. Sve ostalo je mrtav link.
+ *
+ * Lista se proširuje SAMO kada ruta stvarno postoji u `src/app/`. Ako se ovde
+ * doda adresa koje nema, test prestaje da štiti ono zbog čega postoji.
+ */
+const POSTOJECE_RUTE = new Set([
+  "/",
+  "/teme",
+  "/o-nama",
+  "/autor",
+  "/medicinska-recenzija",
+  "/uredjivacka-politika",
+  "/vodic/metabolicko-zdravlje",
+  // `/partner-preview` postoji, ali se do njega dolazi direktnim URL-om.
+  // Da nije u ovoj listi, test bi ga prijavio kao mrtav link ako se ikada
+  // pojavi u navigaciji; da se pojavi, pao bi zaseban test koji to zabranjuje.
+  "/partner-preview",
+]);
 
 function jePoznataRuta(href: string): boolean {
   if (href.startsWith("#")) return true;
