@@ -317,10 +317,22 @@ describe("Statička struktura", () => {
     getHomepageArticles.mockResolvedValue([ARTICLE]);
     const { container } = render(await HomePage());
 
+    /*
+     * Početna sme da vodi samo na rute koje postoje. Uz teme i tekstove, tu su
+     * sada i stranice o autoru, postupku provere, uređivačkoj politici i
+     * vodiču u pripremi — sve postoje u `src/app/`.
+     *
+     * ⛔ `/partner-preview` nije ovde: privatna prezentacija se ne linkuje sa
+     * javne početne stranice.
+     */
     const dozvoljene = [
       "/teme",
       "/teme/test-tema",
       "/tekstovi/test-clanak",
+      "/autor",
+      "/medicinska-recenzija",
+      "/uredjivacka-politika",
+      "/vodic/metabolicko-zdravlje",
       "#kako-proveravamo",
     ];
 

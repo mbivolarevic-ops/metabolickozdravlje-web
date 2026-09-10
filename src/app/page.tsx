@@ -6,6 +6,7 @@ import { TopicGrid } from "@/components/home/TopicGrid";
 import { ReviewedArticles } from "@/components/home/ReviewedArticles";
 import { TreatmentOverview } from "@/components/home/TreatmentOverview";
 import { EditorialMethod } from "@/components/home/EditorialMethod";
+import { GuidePreviewTeaser } from "@/components/home/GuidePreviewTeaser";
 import { AssessmentTeaser } from "@/components/home/AssessmentTeaser";
 import { HomeFinalCta } from "@/components/home/HomeFinalCta";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -62,6 +63,7 @@ export default async function HomePage() {
       <ReviewedArticles articles={articles} />
       <TreatmentOverview />
       <EditorialMethod />
+      <GuidePreviewTeaser />
       <AssessmentTeaser />
       <HomeFinalCta />
     </>

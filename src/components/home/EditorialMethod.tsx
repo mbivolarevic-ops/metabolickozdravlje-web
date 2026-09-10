@@ -62,9 +62,33 @@ export function EditorialMethod() {
           ))}
         </ol>
 
-        <p className="mt-8">
-          <Link href="/teme">Pogledajte teme</Link>
-        </p>
+        {/*
+         * Izlazi ka stranicama koje postoje. Tri kartice iznad su sažetak
+         * postupka; pun opis, pravila i autorstvo stoje zasebno, pa se odavde
+         * do njih dolazi direktno.
+         */}
+        <ul className="mt-8 flex list-none flex-wrap gap-x-8 gap-y-3">
+          <li>
+            <Link href="/medicinska-recenzija" className="font-sans">
+              Kako izgleda medicinska provera
+            </Link>
+          </li>
+          <li>
+            <Link href="/uredjivacka-politika" className="font-sans">
+              Urednička politika
+            </Link>
+          </li>
+          <li>
+            <Link href="/autor" className="font-sans">
+              Ko piše sadržaj
+            </Link>
+          </li>
+          <li>
+            <Link href="/teme" className="font-sans">
+              Pogledajte teme
+            </Link>
+          </li>
+        </ul>
       </Container>
     </section>
   );
